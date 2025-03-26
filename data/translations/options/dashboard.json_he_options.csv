@@ -1,0 +1,19 @@
+Path,Original,Option 1,Option 2,Option 3
+app.name,Sample Application,אפליקציה לדוגמה,יישום לדוגמה,אפליקציה לדוגמה
+app.version,1.0.0,1.0.0,1.0.0,1.0.0
+navigation.home,Home,דף הבית,עמוד הבית,דף הבית
+navigation.dashboard,Dashboard,לוח בקרה,לוח מחוונים,לוח בקרה
+navigation.settings,Settings,הגדרות,הגדרות תצורה,הגדרות
+navigation.profile.view,View Profile,צפה בפרופיל,הצג פרופיל,צפה בפרופיל
+navigation.profile.edit,Edit Profile,ערוך פרופיל,עדכן פרופיל,ערוך פרופיל
+navigation.profile.picture,Change Picture,החלף תמונה,שנה תמונה,החלף תמונה
+messages.success.login,Successfully logged in,התחברת בהצלחה,נכנסת בהצלחה,התחברת בהצלחה
+messages.success.signup,Account created successfully,החשבון נוצר בהצלחה,חשבון נוצר בהצלחה,החשבון נוצר בהצלחה
+messages.success.update,Your information has been updated,המידע שלך עודכן,הפרטים שלך עודכנו,המידע שלך עודכן
+messages.errors.login,Invalid username or password,שם משתמש או סיסמה שגויים,שם המשתמש או הסיסמה אינם חוקיים,שם משתמש או סיסמה שגויים
+messages.errors.server,Server connection error,שגיאה בהתחברות לשרת,שגיאת חיבור לשרת,שגיאה בהתחברות לשרת
+messages.errors.validation,Please check your input and try again,אנא בדוק את הקלט שלך ונסה שוב,בדוק בבקשה את הנתונים ונסה פעם נוספת,אנא בדוק את הקלט שלך ונסה שוב
+buttons.save,Save,שמירה,שמור,שמירה
+buttons.cancel,Cancel,ביטול,בטל,ביטול
+buttons.delete,Delete,מחיקה,מחק,מחיקה
+buttons.confirm,Confirm,אישור,אשר,אישור

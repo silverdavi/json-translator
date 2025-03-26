@@ -1,0 +1,142 @@
+{
+  "structure_score": 100.0,
+  "quality_score": 98.89,
+  "structure_issues": [],
+  "quality_details": {
+    "sentence_scores": [
+      {
+        "path": "app.name",
+        "original": "Sample Application",
+        "translation": "אפליקציה לדוגמה",
+        "score": 100,
+        "comments": "No comment provided"
+      },
+      {
+        "path": "app.version",
+        "original": "1.0.0",
+        "translation": "1.0.0",
+        "score": 100,
+        "comments": "No comment provided"
+      },
+      {
+        "path": "navigation.home",
+        "original": "Home",
+        "translation": "דף הבית",
+        "score": 100,
+        "comments": "No comment provided"
+      },
+      {
+        "path": "navigation.dashboard",
+        "original": "Dashboard",
+        "translation": "לוח בקרה",
+        "score": 100,
+        "comments": "No comment provided"
+      },
+      {
+        "path": "navigation.settings",
+        "original": "Settings",
+        "translation": "הגדרות",
+        "score": 100,
+        "comments": "No comment provided"
+      },
+      {
+        "path": "navigation.profile.view",
+        "original": "View Profile",
+        "translation": "הצג פרופיל",
+        "score": 100,
+        "comments": "No comment provided"
+      },
+      {
+        "path": "navigation.profile.edit",
+        "original": "Edit Profile",
+        "translation": "ערוך פרופיל",
+        "score": 100,
+        "comments": "No comment provided"
+      },
+      {
+        "path": "navigation.profile.picture",
+        "original": "Change Picture",
+        "translation": "שנה תמונה",
+        "score": 100,
+        "comments": "No comment provided"
+      },
+      {
+        "path": "messages.success.login",
+        "original": "Successfully logged in",
+        "translation": "התחברת בהצלחה",
+        "score": 100,
+        "comments": "No comment provided"
+      },
+      {
+        "path": "messages.success.signup",
+        "original": "Account created successfully",
+        "translation": "החשבון נוצר בהצלחה",
+        "score": 100,
+        "comments": "No comment provided"
+      },
+      {
+        "path": "messages.success.update",
+        "original": "Your information has been updated",
+        "translation": "המידע שלך עודכן",
+        "score": 95,
+        "comments": "No comment provided"
+      },
+      {
+        "path": "messages.errors.login",
+        "original": "Invalid username or password",
+        "translation": "שם משתמש או סיסמה שגויים",
+        "score": 95,
+        "comments": "No comment provided"
+      },
+      {
+        "path": "messages.errors.server",
+        "original": "Server connection error",
+        "translation": "שגיאה בחיבור לשרת",
+        "score": 95,
+        "comments": "No comment provided"
+      },
+      {
+        "path": "messages.errors.validation",
+        "original": "Please check your input and try again",
+        "translation": "אנא בדוק את הקלט שלך ונסה שוב",
+        "score": 95,
+        "comments": "No comment provided"
+      },
+      {
+        "path": "buttons.save",
+        "original": "Save",
+        "translation": "שמור",
+        "score": 100,
+        "comments": "No comment provided"
+      },
+      {
+        "path": "buttons.cancel",
+        "original": "Cancel",
+        "translation": "בטל",
+        "score": 100,
+        "comments": "No comment provided"
+      },
+      {
+        "path": "buttons.delete",
+        "original": "Delete",
+        "translation": "מחק",
+        "score": 100,
+        "comments": "No comment provided"
+      },
+      {
+        "path": "buttons.confirm",
+        "original": "Confirm",
+        "translation": "אשר",
+        "score": 100,
+        "comments": "No comment provided"
+      }
+    ],
+    "categories": {
+      "accuracy": 93.94,
+      "fluency": 97.43,
+      "terminology": 97.14,
+      "cultural_appropriateness": 98.06,
+      "formatting": 97.72
+    }
+  }
+}

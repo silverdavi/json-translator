@@ -1,0 +1,72 @@
+{
+  "structure_score": 100.0,
+  "quality_score": 100.0,
+  "structure_issues": [],
+  "quality_details": {
+    "sentence_scores": [
+      {
+        "path": "welcome",
+        "original": "Welcome to our application",
+        "translation": "ברוכים הבאים לאפליקציה שלנו!",
+        "score": 100,
+        "comments": "No comment provided"
+      },
+      {
+        "path": "login",
+        "original": "Log in",
+        "translation": "התחבר",
+        "score": 100,
+        "comments": "No comment provided"
+      },
+      {
+        "path": "signup",
+        "original": "Sign up",
+        "translation": "הירשם",
+        "score": 100,
+        "comments": "No comment provided"
+      },
+      {
+        "path": "logout",
+        "original": "Log out",
+        "translation": "התנתק",
+        "score": 100,
+        "comments": "No comment provided"
+      },
+      {
+        "path": "settings",
+        "original": "Settings",
+        "translation": "הגדרות",
+        "score": 100,
+        "comments": "No comment provided"
+      },
+      {
+        "path": "profile",
+        "original": "Profile",
+        "translation": "פרופיל",
+        "score": 100,
+        "comments": "No comment provided"
+      },
+      {
+        "path": "help",
+        "original": "Help",
+        "translation": "עזרה",
+        "score": 100,
+        "comments": "No comment provided"
+      },
+      {
+        "path": "about",
+        "original": "About",
+        "translation": "אודות",
+        "score": 100,
+        "comments": "No comment provided"
+      }
+    ],
+    "categories": {
+      "accuracy": 94.32,
+      "fluency": 98.5,
+      "terminology": 97.49,
+      "cultural_appropriateness": 98.31,
+      "formatting": 102.06
+    }
+  }
+}

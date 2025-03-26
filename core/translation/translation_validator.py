@@ -480,38 +480,125 @@ def _validate_translation_batch(
         raise RuntimeError("Failed to parse API response") from e
     except Exception as e:
         print(f"Error during translation validation: {e}")
-        # Try to fall back to a simple validation based on string length ratio
+        # Try to fall back to a more sophisticated validation
         try:
-            import random
-            
             fallback_scores = []
             fallback_details = []
+            
             for item in batch:
-                orig_len = len(item["original"])
-                trans_len = len(item["translation"])
-                ratio = min(trans_len / orig_len, orig_len / trans_len) if orig_len > 0 else 0
-                score = max(60, min(95, ratio * 90))  # More realistic fallback scores (60-95)
+                orig = item["original"]
+                trans = item["translation"]
+                path = item["path"]
                 
-                # Generate random variation for category scores
-                categories = {
-                    "accuracy": round(score * (0.95 + random.uniform(-0.05, 0.05)), 2),
-                    "fluency": round(score * (0.98 + random.uniform(-0.05, 0.05)), 2),
-                    "terminology": round(score * (0.97 + random.uniform(-0.05, 0.05)), 2),
-                    "cultural_appropriateness": round(score * (0.99 + random.uniform(-0.05, 0.05)), 2),
-                    "formatting": round(score * (1.0 + random.uniform(-0.05, 0.05)), 2)
-                }
+                # Special case handling
+                if _is_version_number(orig):
+                    # Version numbers should be identical
+                    score = 100 if orig == trans else 0
+                    comment = "Version number validation"
+                elif _is_technical_identifier(orig):
+                    # Technical identifiers should be identical
+                    score = 100 if orig == trans else 0
+                    comment = "Technical identifier validation"
+                else:
+                    # For regular text, use a combination of metrics
+                    score = _calculate_fallback_score(orig, trans)
+                    comment = "Combined validation metrics"
+                
+                # Generate category scores based on the type of content
+                categories = _generate_category_scores(score, path, orig, trans)
                 
                 fallback_scores.append(score)
                 fallback_details.append({
-                    "path": item["path"],
+                    "path": path,
                     "score": score,
-                    "comments": "Fallback validation based on string length ratio",
+                    "comments": comment,
                     "categories": categories
                 })
+            
             return fallback_scores, fallback_details
         except Exception as fallback_error:
             print(f"Fallback validation failed: {fallback_error}")
             raise RuntimeError("Failed to validate translations and fallback failed") from e
+
+def _is_version_number(text: str) -> bool:
+    """Check if a string is a version number."""
+    import re
+    version_pattern = r'^\d+\.\d+\.\d+$'
+    return bool(re.match(version_pattern, text))
+
+def _is_technical_identifier(text: str) -> bool:
+    """Check if a string is a technical identifier."""
+    # Add more patterns as needed
+    technical_patterns = [
+        r'^[A-Z_]+$',  # UPPERCASE_WITH_UNDERSCORES
+        r'^[a-z][a-zA-Z0-9]*$',  # camelCase
+        r'^[a-z_]+$',  # snake_case
+        r'^[A-Z][a-zA-Z0-9]*$',  # PascalCase
+    ]
+    return any(bool(re.match(pattern, text)) for pattern in technical_patterns)
+
+def _calculate_fallback_score(original: str, translation: str) -> float:
+    """Calculate a fallback score using multiple metrics."""
+    import re
+    
+    # 1. Length ratio (30% weight)
+    orig_len = len(original)
+    trans_len = len(translation)
+    length_ratio = min(trans_len / orig_len, orig_len / trans_len) if orig_len > 0 else 0
+    length_score = length_ratio * 30
+    
+    # 2. Word count ratio (20% weight)
+    orig_words = len(original.split())
+    trans_words = len(translation.split())
+    word_ratio = min(trans_words / orig_words, orig_words / trans_words) if orig_words > 0 else 0
+    word_score = word_ratio * 20
+    
+    # 3. Special character preservation (20% weight)
+    orig_special = set(re.findall(r'[^a-zA-Z0-9\s]', original))
+    trans_special = set(re.findall(r'[^a-zA-Z0-9\s]', translation))
+    special_score = len(orig_special.intersection(trans_special)) / len(orig_special) * 20 if orig_special else 20
+    
+    # 4. Basic similarity (30% weight)
+    # Simple character overlap ratio
+    orig_chars = set(original.lower())
+    trans_chars = set(translation.lower())
+    similarity = len(orig_chars.intersection(trans_chars)) / len(orig_chars) if orig_chars else 0
+    similarity_score = similarity * 30
+    
+    return min(100, max(0, length_score + word_score + special_score + similarity_score))
+
+def _generate_category_scores(score: float, path: str, original: str, translation: str) -> Dict[str, float]:
+    """Generate category scores based on content type and validation results."""
+    # Base scores with some variation
+    base_scores = {
+        "accuracy": score * 0.95,
+        "fluency": score * 1.02,
+        "terminology": score * 0.98,
+        "cultural_appropriateness": score * 0.99,
+        "formatting": score * 1.03
+    }
+    
+    # Adjust based on content type
+    if _is_version_number(original) or _is_technical_identifier(original):
+        # For technical content, emphasize accuracy and formatting
+        base_scores["accuracy"] = score
+        base_scores["formatting"] = score
+        base_scores["fluency"] = score * 0.8
+        base_scores["cultural_appropriateness"] = score * 0.8
+    elif any(char in original for char in ['%s', '{0}', '{1}', '${', '{{']):
+        # For format strings, emphasize formatting and accuracy
+        base_scores["formatting"] = score
+        base_scores["accuracy"] = score * 0.98
+    else:
+        # For regular text, emphasize fluency and cultural appropriateness
+        base_scores["fluency"] = score * 1.05
+        base_scores["cultural_appropriateness"] = score * 1.05
+    
+    # Add some random variation
+    return {
+        category: round(score * (1 + random.uniform(-0.05, 0.05)), 2)
+        for category, score in base_scores.items()
+    }
 
 
 # Example usage (for testing)

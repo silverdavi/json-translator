@@ -1,0 +1,19 @@
+Path,Original,Refined Translation
+app.name,Sample Application,אפליקציה לדוגמה
+app.version,1.0.0,1.0.0
+navigation.home,Home,דף הבית
+navigation.dashboard,Dashboard,לוח בקרה
+navigation.settings,Settings,הגדרות
+navigation.profile.view,View Profile,הצג פרופיל
+navigation.profile.edit,Edit Profile,ערוך פרופיל
+navigation.profile.picture,Change Picture,שנה תמונה
+messages.success.login,Successfully logged in,התחברת בהצלחה
+messages.success.signup,Account created successfully,החשבון נוצר בהצלחה
+messages.success.update,Your information has been updated,המידע שלך עודכן
+messages.errors.login,Invalid username or password,שם משתמש או סיסמה שגויים
+messages.errors.server,Server connection error,שגיאה בחיבור לשרת
+messages.errors.validation,Please check your input and try again,אנא בדוק את הקלט שלך ונסה שוב
+buttons.save,Save,שמור
+buttons.cancel,Cancel,בטל
+buttons.delete,Delete,מחק
+buttons.confirm,Confirm,אשר

@@ -1,0 +1,10 @@
+{
+  "welcome": "Welcome to our application",
+  "login": "Log in",
+  "signup": "Sign up",
+  "logout": "Log out",
+  "settings": "Settings",
+  "profile": "Profile",
+  "help": "Help",
+  "about": "About"
+}

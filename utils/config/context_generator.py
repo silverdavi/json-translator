@@ -15,25 +15,51 @@ from utils.config.context_configuration import DEFAULT_PROJECT_DESCRIPTION
 DEFAULT_CONTEXT_CONFIG_PATH = "prompts/context_config.json"
 
 def generate_context_configuration(
-        project_description: Optional[str] = None,
+        project_description: str,
         model: str = "gpt-4o",
         save_to_file: bool = True,
         context_config_path: Optional[str] = None,
-        prompt_config_path: Optional[str] = None
-) -> Dict[str, Any]:
+        prompt_config_path: Optional[str] = None,
+        mock_mode: bool = False
+) -> Dict[str, str]:
     """
-    Generate specialized context configuration for translation tasks.
+    Generate a specialized context for translation based on the project description.
     
     Args:
-        project_description: Description of the project (optional)
-        model: Model to use for context generation
-        save_to_file: Whether to save the generated context to a file
+        project_description: Description of the project
+        model: LLM model to use for context generation
+        save_to_file: Whether to save the context to a file
         context_config_path: Path to save the generated context (optional)
-        prompt_config_path: Path to custom prompt templates (optional)
+        prompt_config_path: Path to prompt configuration file (optional)
+        mock_mode: Whether to run in mock mode without API calls
         
     Returns:
-        Dictionary with the generated context configuration
+        Dictionary with the generated context
     """
+    # If mock mode is enabled, return a mock context without making API calls
+    if mock_mode:
+        mock_context = {
+            "default_project_context": (
+                f"[MOCK CONTEXT] This is a mobile app UI with user profiles and dashboard. "
+                f"The translations should maintain a consistent, user-friendly tone "
+                f"appropriate for mobile applications. Pay special attention to technical "
+                f"terms, button labels, and UI elements to ensure they follow mobile UI "
+                f"conventions in the target language. Character limitations may apply for "
+                f"buttons and menu items. Preserve all formatting codes, variables, and "
+                f"placeholders exactly as they appear in the original text."
+            )
+        }
+        
+        # Save mock context to file if requested
+        if save_to_file:
+            config_path = prompt_config_path or "prompts/context_config.json"
+            os.makedirs(os.path.dirname(config_path), exist_ok=True)
+            with open(config_path, 'w', encoding='utf-8') as f:
+                json.dump(mock_context, f, indent=2)
+            logging.info(f"Saved mock context configuration to {config_path}")
+            
+        return mock_context
+    
     # Use provided description or default
     description = project_description or DEFAULT_PROJECT_DESCRIPTION
     

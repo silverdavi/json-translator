@@ -6,6 +6,7 @@ This module handles the fourth step of the translation pipeline.
 import os
 import csv
 import json
+import copy
 from typing import Dict, List, Any, Optional
 
 # Import the user-provided OpenAI wrapper and context configuration
@@ -20,7 +21,8 @@ def refine_translations(
         model: str,
         output_dir: str,
         project_context: str = None,
-        batch_size: int = 50
+        batch_size: int = 50,
+        mock_mode: bool = False
 ) -> Dict[str, Dict[str, Dict[str, str]]]:
     """
     Refine the selected translations for improved quality and consistency.
@@ -34,12 +36,30 @@ def refine_translations(
         output_dir: Directory to save refined translations CSV files
         project_context: Custom project context (or None to use default)
         batch_size: Number of strings to process in each batch
+        mock_mode: Whether to run in mock mode without API calls
 
     Returns:
         Dictionary mapping filenames to dictionaries mapping languages to
         dictionaries mapping paths to refined translations
     """
     refined = {}
+
+    # If mock mode is enabled, use the selected translations as-is without refinement
+    if mock_mode:
+        refined = copy.deepcopy(selected)
+        
+        # Save refined translations to file if output directory is provided
+        if output_dir:
+            # Create directory if it doesn't exist
+            os.makedirs(output_dir, exist_ok=True)
+            
+            # Save to JSON file
+            for filename, paths in refined.items():
+                file_path = os.path.join(output_dir, f"{filename.split('.')[0]}_refined.json")
+                with open(file_path, 'w', encoding='utf-8') as f:
+                    json.dump(paths, f, ensure_ascii=False, indent=2)
+        
+        return refined
 
     for filename, lang_selections in selected.items():
         refined[filename] = {}

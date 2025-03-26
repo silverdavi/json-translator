@@ -63,6 +63,9 @@ class Config:
     project_description: Optional[str] = None
     regenerate_context: bool = False
     prompt_config_path: Optional[str] = None
+    
+    # Runtime settings
+    mock_mode: bool = False
 
 
 def get_output_dirs(base_output_dir: str) -> Dict[str, str]:

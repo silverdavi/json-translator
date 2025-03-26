@@ -54,7 +54,8 @@ def get_llm_client(
 
 def call_openai(
         prompt: Union[str, Dict[str, Any]],
-        model: Optional[str] = None
+        model: Optional[str] = None,
+        timeout: Optional[float] = None
 ) -> str:
     """
     Call OpenAI API with the given prompt, handling different prompt formats.
@@ -63,6 +64,7 @@ def call_openai(
         prompt: Either a string prompt or a dictionary with structured prompt information
                If a dictionary, it should contain 'system', 'user', and optionally 'response_format'
         model: OpenAI model to use (optional, defaults to config)
+        timeout: Request timeout in seconds (optional)
 
     Returns:
         Response text from the model
@@ -101,7 +103,8 @@ def call_openai(
             # Call LLMApi with structured format
             return client.call_structured_model(
                 messages=messages,
-                response_format=response_format
+                response_format=response_format,
+                timeout=timeout
             )
         else:
             # Handle simple string prompt

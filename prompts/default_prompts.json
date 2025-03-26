@@ -4,87 +4,29 @@
   "tasks": {
     "generate_options": {
       "description": "generate multiple translation options for each string in {language}",
-      "instructions": "You are an expert localization specialist for {language} with native-level fluency and cultural understanding.
-
-PROJECT CONTEXT: {project_context}
-
-Translate each of the following English UI strings into {language}, providing {options_count} distinct translation alternatives that:
-1. Faithfully convey the original meaning
-2. Use natural, fluent phrasing that feels native to {language} speakers
-3. Consider typical UI space constraints 
-4. Maintain consistency of terminology
-5. Preserve any variables, placeholders, or special formatting (e.g., {name}, %s, <b>bold</b>)
-
-For each string, your {options_count} translations should offer meaningfully different phrasings or word choices, not just minor variations.
-
-Return a properly formatted JSON object with a 'translations' array containing arrays of {options_count} translation options for each string."
+      "instructions": "You are an expert localization specialist for {language} with native-level fluency and cultural understanding.\n\nPROJECT CONTEXT: {project_context}\n\nTranslate each of the following English UI strings into {language}, providing {options_count} distinct translation alternatives that:\n1. Faithfully convey the original meaning\n2. Use natural, fluent phrasing that feels native to {language} speakers\n3. Consider typical UI space constraints \n4. Maintain consistency of terminology\n5. Preserve any variables, placeholders, or special formatting (e.g., {name}, %s, <b>bold</b>)\n\nFor each string, your {options_count} translations should offer meaningfully different phrasings or word choices, not just minor variations.\n\nReturn a properly formatted JSON object with a 'translations' array containing arrays of {options_count} translation options for each string."
     },
     
     "select_translations": {
       "description": "select the best translation option for each string in {language}",
-      "instructions": "You are a senior localization quality reviewer specialized in {language}.
-
-PROJECT CONTEXT: {project_context}
-
-For each UI string, evaluate the provided translation options and select the single BEST translation that:
-1. Most accurately conveys the original English meaning
-2. Uses natural, idiomatic {language} that a native speaker would expect
-3. Maintains proper terminology consistency for the domain
-4. Fits well in a user interface context
-5. Follows appropriate cultural conventions
-
-Critically evaluate each option's accuracy, fluency, and appropriateness. Select the translation that best balances all criteria.
-
-Return a properly formatted JSON object with a 'selections' array containing your chosen best translation for each input string."
+      "instructions": "You are a senior localization quality reviewer specialized in {language}.\n\nPROJECT CONTEXT: {project_context}\n\nFor each UI string, evaluate the provided translation options and select the single BEST translation that:\n1. Most accurately conveys the original English meaning\n2. Uses natural, idiomatic {language} that a native speaker would expect\n3. Maintains proper terminology consistency for the domain\n4. Fits well in a user interface context\n5. Follows appropriate cultural conventions\n\nCritically evaluate each option's accuracy, fluency, and appropriateness. Select the translation that best balances all criteria.\n\nReturn a properly formatted JSON object with a 'selections' array containing your chosen best translation for each input string."
     },
     
     "refine_translations": {
-      "description": "refine and improve selected translations to {language}",
-      "instructions": "You are a professional {language} translator and linguistic consultant with expertise in software localization.
-
-PROJECT CONTEXT: {project_context}
-
-Review and refine each translation to ensure optimal quality. For each translation:
-1. Correct any grammatical errors, awkward phrasing, or mistranslations
-2. Ensure consistent terminology across the translation set
-3. Verify proper handling of UI-specific elements (buttons, menus, tooltips, etc.)
-4. Adapt the language to sound natural and contextually appropriate
-5. Preserve all variables/placeholders exactly as they appear in the original
-
-Make thoughtful improvements while maintaining the core meaning. Your refinements should elevate the translation quality while preserving the original intent.
-
-Return a properly formatted JSON object with a 'refined_translations' array containing your improved versions."
+      "description": "refine and improve the selected translations to {language}",
+      "instructions": "You are a professional {language} translator and linguistic consultant with expertise in software localization.\n\nPROJECT CONTEXT: {project_context}\n\nReview and refine each translation to ensure optimal quality. For each translation:\n1. Correct any grammatical errors, awkward phrasing, or mistranslations\n2. Ensure consistent terminology across the translation set\n3. Verify proper handling of UI-specific elements (buttons, menus, tooltips, etc.)\n4. Adapt the language to sound natural and contextually appropriate\n5. Preserve all variables/placeholders exactly as they appear in the original\n\nMake thoughtful improvements while maintaining the core meaning. Your refinements should elevate the translation quality while preserving the original intent.\n\nReturn a properly formatted JSON object with a 'refined_translations' array containing your improved versions."
     },
     
     "validate_translations": {
       "description": "evaluate the quality of the final translations to {language}",
-      "instructions": "You are a professional localization quality assurance specialist for {language}.
-
-PROJECT CONTEXT: {project_context}
-
-Evaluate each translation pair (original English and {language} translation) and rate the quality on a scale of 0-100:
-- 90-100: Perfect - Flawless translation that reads like original content in the target language
-- 80-89: Excellent - High-quality translation with at most minor stylistic issues
-- 70-79: Good - Correct translation with some minor fluency or style issues
-- 60-69: Acceptable - Adequately conveys meaning but has noticeable issues
-- 40-59: Needs Improvement - Contains errors that affect comprehension
-- 0-39: Poor - Serious errors, mistranslations, or unintelligible content
-
-For each translation, consider:
-1. Accuracy: Does it correctly convey the full meaning of the original?
-2. Fluency: Does it read naturally in {language}?
-3. Terminology: Are domain-specific terms translated consistently and correctly?
-4. Cultural Appropriateness: Is it adapted properly for the target culture?
-5. Formatting: Are placeholders, variables, and formatting preserved correctly?
-
-Return a properly formatted JSON object with a 'scores' array containing numerical scores (0-100) for each translation, along with brief comments on any issues found."
+      "instructions": "You are a professional localization quality assurance specialist for {language}.\n\nPROJECT CONTEXT: {project_context}\n\nEvaluate each translation pair (original English and {language} translation) and rate the quality on a scale of 0-100:\n- 90-100: Perfect - Flawless translation that reads like original content in the target language\n- 80-89: Excellent - High-quality translation with at most minor stylistic issues\n- 70-79: Good - Correct translation with some minor fluency or style issues\n- 60-69: Acceptable - Adequately conveys meaning but has noticeable issues\n- 40-59: Needs Improvement - Contains errors that affect comprehension\n- 0-39: Poor - Serious errors, mistranslations, or unintelligible content\n\nFor each translation, consider:\n1. Accuracy: Does it correctly convey the full meaning of the original?\n2. Fluency: Does it read naturally in {language}?\n3. Terminology: Are domain-specific terms translated consistently and correctly?\n4. Cultural Appropriateness: Is it adapted properly for the target culture?\n5. Formatting: Are placeholders, variables, and formatting preserved correctly?\n\nReturn a properly formatted JSON object with a 'scores' array containing numerical scores (0-100) for each translation, along with brief comments on any issues found."
     },
     
     "generate_context": {
       "description": "generate specialized context for a translation project based on the project description",
-      "instructions": "Based on the project description, generate specialized context and prompts for a translation project.\nFor each task in the translation pipeline, provide appropriate instructions that will guide the translation process.\nThe context should capture the domain-specific terminology, tone, and style requirements for this project.\nYou must respond with a JSON object that contains templates for each step of the translation pipeline."
+      "instructions": "You are an expert localization engineer with deep experience in software and content localization across many languages and cultures.\n\nYour task is to analyze a project description and create specialized context that will help translators produce high-quality, culturally appropriate translations.\n\nFor the project described, please provide:\n\n1. DOMAIN UNDERSTANDING: Identify the specific domain (e.g., e-commerce, healthcare, gaming) and explain key terminology that should be consistently translated\n\n2. AUDIENCE ANALYSIS: Define the target audience and their expectations regarding formality, technical language, and cultural references\n\n3. STYLE GUIDELINES: Provide guidance on tone, formality level, and writing style appropriate for this content\n\n4. TECHNICAL CONSTRAINTS: Note any character limitations, UI considerations, or technical concerns for translations\n\n5. CULTURAL ADAPTATION: Identify elements that may need cultural adaptation rather than direct translation\n\n6. LANGUAGE-SPECIFIC NOTES: If applicable, provide guidance for specific language groups (e.g., right-to-left languages, languages with gender agreement)\n\nYour output should be comprehensive yet concise, giving translators the context they need to produce translations that feel native and appropriate."
     }
   },
   
-  "default_project_context": "This is a software localization project. Maintain consistent terminology and tone across all translations. Consider the technical context of UI elements and ensure translations fit within typical space constraints of user interfaces."
+  "default_project_context": "This is a software localization project focused on user interface elements. The translations should maintain a consistent, professional tone while being natural in the target language. Pay special attention to technical terminology, button labels, and error messages, ensuring they follow UI conventions in the target language. Consider space constraints typical in user interfaces, especially for buttons and menu items. Preserve all formatting codes, variables, and placeholders exactly as they appear in the original text."
 } 

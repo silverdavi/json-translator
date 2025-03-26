@@ -30,7 +30,9 @@ Thumbs.db
 
 # Project specific
 data/output/
+examples/output*/
 data/input/*
+examples/*test*
 !data/input/sample/
 lang_out/
 lang/

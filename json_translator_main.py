@@ -56,6 +56,25 @@ def setup_environment():
         logger.warning("OPENAI_API_KEY not found in environment variables.")
         return False
     
+    # Verify that the API key is not a placeholder or contains invalid characters
+    if "mock" in api_key.lower() or api_key == "your_api_key":
+        logger.warning("OPENAI_API_KEY appears to be a placeholder value. Please set a valid API key.")
+        return False
+    
+    # Basic format validation
+    if not api_key.startswith("sk-") and not api_key.startswith("sk-proj-"):
+        logger.warning(f"OPENAI_API_KEY has incorrect format. OpenAI keys should start with 'sk-' or 'sk-proj-'.")
+        return False
+    
+    # Check for newlines or spaces which could cause problems
+    if '\n' in api_key or ' ' in api_key:
+        logger.warning("OPENAI_API_KEY contains newlines or spaces which will cause API errors.")
+        # Try to clean up the key
+        cleaned_key = api_key.replace('\n', '').replace(' ', '')
+        logger.info("Attempting to use cleaned API key...")
+        os.environ["OPENAI_API_KEY"] = cleaned_key
+    
+    logger.debug(f"Using API key: {api_key[:7]}...{api_key[-4:]}")
     return True
 
 def validate_languages(languages: List[str]) -> List[str]:
@@ -71,22 +90,45 @@ def validate_languages(languages: List[str]) -> List[str]:
     language_codes = load_language_codes()
     valid_languages = []
     
+    # Add common aliases
+    language_aliases = {
+        "chinese": ["Simplified Chinese", "Chinese"],
+        "simplified chinese": ["Simplified Chinese"],
+        "traditional chinese": ["Traditional Chinese"],
+        "mandarin": ["Simplified Chinese"],
+        "cantonese": ["Traditional Chinese"],
+        "taiwanese": ["Traditional Chinese"],
+        "zh": ["Simplified Chinese"],
+        "zh-cn": ["Simplified Chinese"],
+        "zh-tw": ["Traditional Chinese"],
+        "spain": ["Spanish"],
+        "brazilian": ["Portuguese"],
+        "brasil": ["Portuguese"]
+    }
+    
     for language in languages:
         language = language.strip()
         # Check for exact match
         if language in language_codes:
             valid_languages.append(language)
         else:
-            # Try to find a case-insensitive match
-            matches = [lang for lang in language_codes.keys() 
-                      if lang.lower() == language.lower()]
-            if matches:
-                logger.info(f"Using '{matches[0]}' instead of '{language}'")
-                valid_languages.append(matches[0])
+            # Check for aliases
+            language_lower = language.lower()
+            if language_lower in language_aliases:
+                matched_language = language_aliases[language_lower][0]
+                logger.info(f"Using '{matched_language}' instead of '{language}'")
+                valid_languages.append(matched_language)
             else:
-                logger.warning(f"Language '{language}' not found in language codes. "
-                             f"Will use as provided, but translation quality may be affected.")
-                valid_languages.append(language)
+                # Try to find a case-insensitive match
+                matches = [lang for lang in language_codes.keys() 
+                        if lang.lower() == language.lower()]
+                if matches:
+                    logger.info(f"Using '{matches[0]}' instead of '{language}'")
+                    valid_languages.append(matches[0])
+                else:
+                    logger.warning(f"Language '{language}' not found in language codes. "
+                                f"Will use as provided, but translation quality may be affected.")
+                    valid_languages.append(language)
     
     return valid_languages
 

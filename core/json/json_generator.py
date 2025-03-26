@@ -26,7 +26,9 @@ def load_language_codes() -> Dict[str, str]:
             "Spanish": "es",
             "French": "fr",
             "German": "de",
-            "Chinese": "zh"
+            "Chinese": "zh",
+            "Simplified Chinese": "zh-CN",
+            "Traditional Chinese": "zh-TW"
         }
 
 # Load language codes from file
@@ -74,6 +76,14 @@ def generate_translated_jsons(
 
             # Get language code for folder name
             language_code = LANGUAGE_CODES.get(language, language.lower())
+            
+            # Special handling for Chinese
+            if language.lower() == "chinese" and language not in LANGUAGE_CODES:
+                language_code = "zh" # Default to general Chinese code
+                if "simplified" in language.lower():
+                    language_code = LANGUAGE_CODES.get("Simplified Chinese", "zh-CN")
+                elif "traditional" in language.lower():
+                    language_code = LANGUAGE_CODES.get("Traditional Chinese", "zh-TW")
 
             # Create language-specific directory
             lang_dir = os.path.join(output_dir, language_code)

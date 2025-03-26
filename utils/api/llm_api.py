@@ -52,12 +52,13 @@ class LLMApi:
         self.call_count = 0
         self.last_response = ""
 
-    def call_model(self, prompt: str) -> str:
+    def call_model(self, prompt: str, timeout: Optional[float] = None) -> str:
         """
         Make API call with a simple string prompt.
 
         Args:
             prompt: Input prompt for the model as a string
+            timeout: Request timeout in seconds (optional)
 
         Returns:
             Model's response text
@@ -66,12 +67,13 @@ class LLMApi:
             Exception: If all retry attempts fail
         """
         messages = [{"role": "user", "content": prompt}]
-        return self._make_api_call(messages)
+        return self._make_api_call(messages, timeout=timeout)
 
     def call_structured_model(
             self,
             messages: List[Dict[str, str]],
-            response_format: Optional[Dict[str, str]] = None
+            response_format: Optional[Dict[str, str]] = None,
+            timeout: Optional[float] = None
     ) -> str:
         """
         Make API call with structured messages and optional response format.
@@ -79,6 +81,7 @@ class LLMApi:
         Args:
             messages: List of message objects with role and content
             response_format: Optional response format specification (e.g., {"type": "json_object"})
+            timeout: Request timeout in seconds (optional)
 
         Returns:
             Model's response text
@@ -86,12 +89,13 @@ class LLMApi:
         Raises:
             Exception: If all retry attempts fail
         """
-        return self._make_api_call(messages, response_format)
+        return self._make_api_call(messages, response_format, timeout)
 
     def _make_api_call(
             self,
             messages: List[Dict[str, str]],
-            response_format: Optional[Dict[str, str]] = None
+            response_format: Optional[Dict[str, str]] = None,
+            timeout: Optional[float] = None
     ) -> str:
         """
         Internal method to make OpenAI API calls with retry logic and rate limiting.
@@ -99,6 +103,7 @@ class LLMApi:
         Args:
             messages: List of message objects with role and content
             response_format: Optional response format specification
+            timeout: Request timeout in seconds (None uses default)
 
         Returns:
             Model's response text
@@ -125,17 +130,38 @@ class LLMApi:
                 # Add response_format if specified
                 if response_format:
                     api_args["response_format"] = response_format
+                
+                # Add timeout if specified
+                if timeout:
+                    api_args["timeout"] = timeout
 
                 # Make the API call
+                logger.debug(f"Making API call with model {self.model}")
                 response = self.client.chat.completions.create(**api_args)
 
                 self.last_response = response.choices[0].message.content.strip()
                 return self.last_response
 
             except Exception as e:
-                logger.warning(f"API call attempt {attempt + 1} failed: {str(e)}")
+                # Use exponential backoff for retry delay
+                backoff_delay = self.retry_delay * (2 ** attempt)
+                
+                # Log based on exception type for better diagnostics
+                if "timeout" in str(e).lower() or "timed out" in str(e).lower():
+                    logger.warning(f"API call timeout (attempt {attempt + 1}): {str(e)}")
+                elif "rate limit" in str(e).lower():
+                    logger.warning(f"API rate limit exceeded (attempt {attempt + 1}): {str(e)}")
+                    # Add extra delay for rate limiting
+                    backoff_delay = max(backoff_delay, 5)
+                else:
+                    logger.warning(f"API call attempt {attempt + 1} failed: {str(e)}")
+                
                 if attempt < self.max_retries - 1:
-                    time.sleep(self.retry_delay * (attempt + 1))
+                    # Add a bit of randomness to avoid thundering herd
+                    jitter = backoff_delay * 0.1 * (2 * time.time() % 1 - 0.5)
+                    retry_time = backoff_delay + jitter
+                    logger.info(f"Retrying request in {retry_time:.2f} seconds")
+                    time.sleep(retry_time)
                 else:
                     error_msg = f"All retry attempts failed: {str(e)}"
                     logger.error(error_msg)

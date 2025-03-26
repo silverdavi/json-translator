@@ -47,7 +47,8 @@ class TranslationPipeline:
                 project_description=config.project_description,
                 model=context_model,
                 save_to_file=True,
-                prompt_config_path=config.prompt_config_path
+                prompt_config_path=config.prompt_config_path,
+                mock_mode=config.mock_mode
             )
             self.project_context = context_config.get("default_project_context", "")
             logging.info("Context generation complete")
@@ -93,7 +94,8 @@ class TranslationPipeline:
                 self.config.options_count,
                 self.output_dirs["options"],
                 self.project_context,
-                batch_size=self.config.batch_size
+                batch_size=self.config.batch_size,
+                mock_mode=self.config.mock_mode
             )
             pbar.update(len(self.config.languages))
             
@@ -116,7 +118,8 @@ class TranslationPipeline:
                 self.config.selection_model,
                 self.output_dirs["selected"],
                 self.project_context,
-                batch_size=self.config.batch_size
+                batch_size=self.config.batch_size,
+                mock_mode=self.config.mock_mode
             )
             pbar.update(len(self.config.languages))
             
@@ -139,7 +142,8 @@ class TranslationPipeline:
                 self.config.refinement_model,
                 self.output_dirs["refined"],
                 self.project_context,
-                batch_size=self.config.batch_size
+                batch_size=self.config.batch_size,
+                mock_mode=self.config.mock_mode
             )
             pbar.update(len(self.config.languages))
             
@@ -174,7 +178,8 @@ class TranslationPipeline:
                 self.config.validation_model,
                 self.output_dirs["validated"],
                 self.project_context,
-                batch_size=self.config.batch_size
+                batch_size=self.config.batch_size,
+                mock_mode=self.config.mock_mode
             )
             pbar.update(len(self.config.languages))
             

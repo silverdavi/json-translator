@@ -15,34 +15,60 @@ from utils.config.context_configuration import get_system_prompt
 
 def select_best_translations(
     options: Dict[str, Dict[str, Dict[str, List[str]]]],
-    original_jsons: Dict[str, Any],
+    json_files: Dict[str, Dict],
     languages: List[str],
-    model: str,
-    output_dir: str,
-    project_context: str = None,
-    batch_size: int = 20
+    model: str = "o1",
+    output_dir: Optional[str] = None,
+    project_context: Optional[str] = None,
+    batch_size: int = 20,
+    mock_mode: bool = False
 ) -> Dict[str, Dict[str, Dict[str, str]]]:
     """
-    Select the best translation from the options for each string.
-
+    Select the best translation option for each string.
+    
     Args:
         options: Dictionary mapping filenames to dictionaries mapping paths to
-                 dictionaries mapping languages to lists of translation options
-        original_jsons: Dictionary mapping filenames to original JSON data
+               dictionaries mapping languages to lists of translation options
+        json_files: Original JSON files for context
         languages: List of target languages
-        model: Model to use for selecting best translations
-        output_dir: Directory to save selected translations CSV files
-        project_context: Custom project context (or None to use default)
-        batch_size: Number of string selections to process in each batch
-
+        model: LLM model to use for selection
+        output_dir: Directory to save intermediate results (optional)
+        project_context: Additional context for selection
+        batch_size: Number of options to select in each batch
+        mock_mode: Whether to run in mock mode without API calls
+        
     Returns:
-        Dictionary mapping filenames to dictionaries mapping languages to
-        dictionaries mapping paths to selected translations
+        Dictionary mapping filenames to dictionaries mapping paths to
+        dictionaries mapping languages to selected translations
     """
-    selected = {}
+    # Create selections structure
+    selections = {}
+    
+    # If mock mode is enabled, select the first option without API calls
+    if mock_mode:
+        for filename, paths in options.items():
+            selections[filename] = {}
+            for path, langs in paths.items():
+                selections[filename][path] = {}
+                for language, opts in langs.items():
+                    # Select the first option as the "best" translation
+                    selections[filename][path][language] = opts[0] if opts else f"[{language}] MISSING"
+        
+        # Save selections to file if output directory is provided
+        if output_dir:
+            # Create directory if it doesn't exist
+            os.makedirs(output_dir, exist_ok=True)
+            
+            # Save to JSON file
+            for filename, paths in selections.items():
+                file_path = os.path.join(output_dir, f"{filename.split('.')[0]}_selections.json")
+                with open(file_path, 'w', encoding='utf-8') as f:
+                    json.dump(paths, f, ensure_ascii=False, indent=2)
+        
+        return selections
 
     for filename, path_options in options.items():
-        selected[filename] = {}
+        selections[filename] = {}
 
         # Prepare selection data
         path_items = list(path_options.items())
@@ -59,8 +85,8 @@ def select_best_translations(
                     print(f"Skipping existing selections for {language} in {filename}")
 
                     # Load existing selections from CSV
-                    if language not in selected[filename]:
-                        selected[filename][language] = {}
+                    if language not in selections[filename]:
+                        selections[filename][language] = {}
 
                     with open(csv_path, 'r', newline='', encoding='utf-8') as csvfile:
                         reader = csv.reader(csvfile)
@@ -68,7 +94,7 @@ def select_best_translations(
                         for row in reader:
                             if len(row) >= 3:
                                 path, original, translation = row[0], row[1], row[2]
-                                selected[filename][language][path] = translation
+                                selections[filename][language][path] = translation
 
                     continue
 
@@ -86,18 +112,18 @@ def select_best_translations(
                     selection_data, 
                     language, 
                     model, 
-                    original_jsons[filename],
+                    json_files[filename],
                     project_context
                 )
 
                 # Store selected translations
-                if language not in selected[filename]:
-                    selected[filename][language] = {}
+                if language not in selections[filename]:
+                    selections[filename][language] = {}
 
                 for selection in batch_selected:
                     path = selection["path"]
                     selected_translation = selection["selected"]
-                    selected[filename][language][path] = selected_translation
+                    selections[filename][language][path] = selected_translation
 
             print(
                 f"Selected translations for batch {i // batch_size + 1}/{(len(path_items) - 1) // batch_size + 1} for {filename}"
@@ -106,7 +132,7 @@ def select_best_translations(
         # Save selected translations to CSV for each language
         for language in languages:
             # Skip if this language wasn't processed
-            if language not in selected[filename]:
+            if language not in selections[filename]:
                 continue
 
             csv_path = os.path.join(
@@ -121,13 +147,13 @@ def select_best_translations(
                 writer = csv.writer(csvfile)
                 writer.writerow(["Path", "Original", "Selected Translation"])
 
-                for path, translations in selected[filename][language].items():
+                for path, translations in selections[filename][language].items():
                     original = ""
                     # Find original text from options dictionary
-                    if filename in original_jsons and path in path_options:
+                    if filename in json_files and path in path_options:
                         # Extract original text by traversing the JSON using path components
                         components = path.split('.')
-                        obj = original_jsons[filename]
+                        obj = json_files[filename]
                         try:
                             for comp in components:
                                 obj = obj[comp]
@@ -140,7 +166,7 @@ def select_best_translations(
 
             print(f"Saved selected translations for {language} in {filename}")
 
-    return selected
+    return selections
 
 
 def _get_value_at_path(json_data: Dict, path: str) -> Any:
@@ -220,6 +246,58 @@ def _select_best_batch(
     except Exception as e:
         print(f"Error during translation selection: {str(e)}")
         return [item["options"][0] for item in batch_data]  # Fallback to first option
+
+
+def _select_best_translations(
+    selection_data: List[Dict[str, Any]],
+    language: str,
+    model: str,
+    json_data: Dict,
+    project_context: str = None
+) -> List[Dict[str, Any]]:
+    """
+    Select the best translation from options for a batch of strings.
+    
+    Args:
+        selection_data: List of dictionaries containing paths and translation options
+        language: Target language
+        model: Model to use for selection
+        json_data: Original JSON data for context
+        project_context: Custom project context
+        
+    Returns:
+        List of dictionaries containing paths and selected translations
+    """
+    # Format the data for the batch selection function
+    batch_data = []
+    for item in selection_data:
+        path = item["path"]
+        options = item["options"]
+        
+        # Get original text by traversing the JSON using path components
+        original = _get_value_at_path(json_data, path)
+        if not isinstance(original, str):
+            original = str(original)
+            
+        batch_data.append({
+            "path": path,
+            "original": original,
+            "options": options
+        })
+    
+    # Call the batch selection function
+    selected_translations = _select_best_batch(batch_data, language, model, project_context)
+    
+    # Format the results
+    results = []
+    for i, item in enumerate(selection_data):
+        selected = selected_translations[i] if i < len(selected_translations) else item["options"][0]
+        results.append({
+            "path": item["path"],
+            "selected": selected
+        })
+    
+    return results
 
 
 # Example usage (for testing)

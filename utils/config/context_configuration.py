@@ -42,16 +42,49 @@ def get_system_prompt(
     # Load default prompts
     try:
         with open(DEFAULT_PROMPT_CONFIG_PATH, "r", encoding="utf-8") as f:
-            prompt_templates = json.load(f)
+            prompt_config = json.load(f)
+            
+        # Check if the new prompt structure is used
+        if "tasks" in prompt_config and prompt_type in prompt_config["tasks"]:
+            # New structure with tasks and instructions
+            task_info = prompt_config["tasks"][prompt_type]
+            
+            # Use the base template with the task's instructions
+            base_template = prompt_config.get("base_system_prompt_template", "")
+            instructions = task_info.get("instructions", "")
+            task_description = task_info.get("description", prompt_type)
+            
+            # Format with variables if provided
+            context = project_context or prompt_config.get("default_project_context", DEFAULT_CONTEXT)
+            
+            format_vars = {
+                "task_description": task_description,
+                "project_context": context,
+                "additional_instructions": instructions,
+                "language": language or "the target language",
+                "options_count": options_count or 3
+            }
+            
+            # Format the template
+            prompt = base_template.format(**format_vars)
+            return prompt
+            
+        # Fall back to old structure if needed
+        elif prompt_type in prompt_config:
+            base_prompt = prompt_config[prompt_type]
+        else:
+            # Use minimal default prompts
+            minimal_templates = _get_minimal_prompt_templates()
+            if prompt_type not in minimal_templates:
+                raise ValueError(f"Invalid prompt type: {prompt_type}")
+            base_prompt = minimal_templates[prompt_type]
+            
     except (FileNotFoundError, json.JSONDecodeError):
         # If file not found or invalid, use minimal default prompts
-        prompt_templates = _get_minimal_prompt_templates()
-    
-    # Get the base prompt template
-    if prompt_type not in prompt_templates:
-        raise ValueError(f"Invalid prompt type: {prompt_type}")
-    
-    base_prompt = prompt_templates[prompt_type]
+        minimal_templates = _get_minimal_prompt_templates()
+        if prompt_type not in minimal_templates:
+            raise ValueError(f"Invalid prompt type: {prompt_type}")
+        base_prompt = minimal_templates[prompt_type]
     
     # Format with variables if provided
     context = project_context or DEFAULT_CONTEXT

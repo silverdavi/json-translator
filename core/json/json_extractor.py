@@ -78,6 +78,36 @@ def process_json_files(src_dir: str) -> Tuple[Dict[str, Dict[str, str]], Dict[st
     
     return extracted_strings, json_files
 
+def extract_strings(json_files: Dict[str, Dict], output_dir: str = None) -> Dict[str, Dict[str, str]]:
+    """
+    Extract translatable strings from JSON files.
+    This is a compatibility wrapper for the translation_pipeline module.
+    
+    Args:
+        json_files: Dictionary mapping filenames to JSON objects
+        output_dir: Directory to save extracted strings (optional)
+        
+    Returns:
+        Dictionary mapping filenames to dictionaries mapping paths to string values
+    """
+    extracted = {}
+    
+    for filename, json_data in json_files.items():
+        # Extract strings from the JSON file
+        file_strings = extract_strings_from_json(json_data)
+        
+        # Store the extracted strings
+        extracted[filename] = file_strings
+        
+        # Save to file if output directory is provided
+        if output_dir:
+            os.makedirs(output_dir, exist_ok=True)
+            output_path = os.path.join(output_dir, f"{filename}_extracted.json")
+            with open(output_path, 'w', encoding='utf-8') as f:
+                json.dump(file_strings, f, indent=2, ensure_ascii=False)
+    
+    return extracted
+
 # Example usage (for testing)
 if __name__ == "__main__":
     # Process JSON files in the examples directory

@@ -15,29 +15,59 @@ from utils.config.context_configuration import get_system_prompt
 def generate_translation_options(
     extracted: Dict[str, Dict[str, str]],
     languages: List[str],
-    model: str,
-    options_count: int,
-    output_dir: str,
-    project_context: str = None,
-    batch_size: int = 10
+    model: str = "o1",
+    options_count: int = 3,
+    output_dir: Optional[str] = None,
+    project_context: Optional[str] = None,
+    batch_size: int = 20,
+    mock_mode: bool = False
 ) -> Dict[str, Dict[str, Dict[str, List[str]]]]:
     """
-    Generate multiple translation options for each string.
-
+    Generate multiple translation options for each extracted string.
+    
     Args:
-        extracted: Dictionary mapping filenames to dictionaries of paths to strings
-        languages: List of target languages
-        model: Model to use for generating translation options
-        options_count: Number of translation options to generate per string
-        output_dir: Directory to save generated options CSV files
-        project_context: Custom project context (or None to use default)
-        batch_size: Number of strings to process in each batch
-
+        extracted: Dictionary mapping filenames to dictionaries mapping paths to strings
+        languages: Target languages for translation
+        model: LLM model to use for translation
+        options_count: Number of options to generate for each string
+        output_dir: Directory to save intermediate results (optional)
+        project_context: Additional context for the translation
+        batch_size: Number of strings to translate in each batch
+        mock_mode: Whether to run in mock mode without API calls
+        
     Returns:
-        Dictionary mapping filenames to dictionaries mapping paths to
+        Dictionary mapping filenames to dictionaries mapping paths to 
         dictionaries mapping languages to lists of translation options
     """
+    # Create options structure
     options = {}
+    
+    # If mock mode is enabled, generate mock translations without API calls
+    if mock_mode:
+        for filename, strings in extracted.items():
+            options[filename] = {}
+            for path, value in strings.items():
+                options[filename][path] = {}
+                for language in languages:
+                    # Generate mock translation options
+                    mock_options = []
+                    for i in range(options_count):
+                        # Create simple mock translations with variation
+                        if i == 0:
+                            # Use a more realistic mock translation
+                            mock = f"{value}"  # Just keep the original string as mock
+                        else:
+                            # Add minimal variation for other options
+                            mock = f"{value} (alt {i})"
+                        mock_options.append(mock)
+                    
+                    options[filename][path][language] = mock_options
+        
+        # Save options to file if output directory is provided
+        if output_dir:
+            save_options_to_files(options, output_dir)
+            
+        return options
 
     for filename, strings in extracted.items():
         options[filename] = {}
@@ -217,6 +247,26 @@ def _generate_batch_options(
     except Exception as e:
         print(f"Error calling OpenAI API: {e}")
         return [[f"Error: API call failed"] * options_count] * len(strings)
+
+def save_options_to_files(options: Dict[str, Dict[str, Dict[str, List[str]]]], output_dir: str) -> None:
+    """
+    Save translation options to JSON files.
+    
+    Args:
+        options: Dictionary mapping filenames to dictionaries mapping paths to
+               dictionaries mapping languages to lists of translation options
+        output_dir: Directory to save the option files
+    """
+    # Create directory if it doesn't exist
+    os.makedirs(output_dir, exist_ok=True)
+    
+    # Save to JSON file
+    for filename, paths in options.items():
+        file_path = os.path.join(output_dir, f"{filename.split('.')[0]}_options.json")
+        with open(file_path, 'w', encoding='utf-8') as f:
+            json.dump(paths, f, ensure_ascii=False, indent=2)
+        
+        print(f"Saved translation options for {filename}")
 
 # Example usage (for testing)
 if __name__ == "__main__":

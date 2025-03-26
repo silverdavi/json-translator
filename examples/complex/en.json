@@ -1,0 +1,52 @@
+{
+  "app": {
+    "name": "Sample Application",
+    "supportedLanguages": ["English", "Spanish", "French", "German", "Japanese"],
+    "version": "1.0.0",
+    "buildDate": "2023-09-15",
+    "settings": {
+      "theme": "default",
+      "notifications": true,
+      "autoSave": false
+    }
+  },
+  "dashboard": {
+    "welcome": "Welcome back, {username}!",
+    "statistics": {
+      "title": "Your Activity",
+      "lastLogin": "Last login: {date}",
+      "items": [
+        {
+          "label": "Projects",
+          "count": 12,
+          "description": "You have {count} active projects"
+        },
+        {
+          "label": "Tasks",
+          "count": 34,
+          "description": "You have {count} pending tasks"
+        },
+        {
+          "label": "Messages",
+          "count": 5,
+          "description": "You have {count} unread messages"
+        }
+      ]
+    }
+  },
+  "notifications": {
+    "newMessage": "You have received a new message from {sender}",
+    "taskDue": "Task '{taskName}' is due {dueDate}",
+    "systemUpdate": "System update available: Version {version}"
+  },
+  "errors": {
+    "fileTypes": "Only these file types are supported: {supportedTypes}",
+    "maxSize": "Maximum file size exceeded. Limit: {maxSize}MB",
+    "rateLimited": "Too many requests. Please try again in {timeRemaining} seconds."
+  },
+  "pagination": {
+    "resultsText": "Showing {start} to {end} of {total} results",
+    "page": "Page {current} of {total}",
+    "itemsPerPage": [10, 25, 50, 100]
+  }
+} 

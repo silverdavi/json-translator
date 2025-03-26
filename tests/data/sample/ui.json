@@ -1,0 +1,33 @@
+{
+  "header": {
+    "title": "JSON Translation Tool",
+    "subtitle": "Translate your JSON files to multiple languages"
+  },
+  "navigation": {
+    "home": "Home",
+    "settings": "Settings",
+    "help": "Help"
+  },
+  "buttons": {
+    "start": "Start Translation",
+    "cancel": "Cancel",
+    "save": "Save",
+    "export": "Export Results"
+  },
+  "messages": {
+    "success": "Translation completed successfully!",
+    "error": "An error occurred during translation.",
+    "warning": "Some strings could not be translated."
+  },
+  "settings": {
+    "languages": {
+      "title": "Languages",
+      "select": "Select languages to translate to"
+    },
+    "options": {
+      "title": "Options",
+      "count": "Number of translation options to generate",
+      "model": "Model to use for translation"
+    }
+  }
+} 

@@ -1,0 +1,34 @@
+{
+  "app": {
+    "name": "Sample Application",
+    "version": "1.0.0"
+  },
+  "navigation": {
+    "home": "Home",
+    "dashboard": "Dashboard",
+    "settings": "Settings",
+    "profile": {
+      "view": "View Profile",
+      "edit": "Edit Profile",
+      "picture": "Change Picture"
+    }
+  },
+  "messages": {
+    "success": {
+      "login": "Successfully logged in",
+      "signup": "Account created successfully",
+      "update": "Your information has been updated"
+    },
+    "errors": {
+      "login": "Invalid username or password",
+      "server": "Server connection error",
+      "validation": "Please check your input and try again"
+    }
+  },
+  "buttons": {
+    "save": "Save",
+    "cancel": "Cancel",
+    "delete": "Delete",
+    "confirm": "Confirm"
+  }
+} 

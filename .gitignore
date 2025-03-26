@@ -1,0 +1,47 @@
+# Python virtual environment
+venv/
+env/
+.env/
+
+# Python bytecode
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Distribution / packaging
+dist/
+build/
+*.egg-info/
+
+
+# IDE specific
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# Environment variables
+.env
+.env.local
+
+# OS specific
+.DS_Store
+Thumbs.db
+
+# Project specific
+data/output/
+data/input/*
+!data/input/sample/
+lang_out/
+lang/
+output/
+logs/
+*.log
+prompts/*
+!prompts/default_prompts.json
+.coverage
+htmlcov/
+
+# Temporary files
+temp/
+tmp/ 

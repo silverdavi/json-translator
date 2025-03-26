@@ -194,6 +194,17 @@ def _select_best_batch(
     # Validate input batch
     if not batch_data:
         raise ValueError("Empty batch data provided")
+        
+    # Get language name from language code by loading languages.json
+    try:
+        with open("data/languages.json", "r", encoding="utf-8") as f:
+            language_data = json.load(f)
+            # Swap keys and values to get a mapping from code to name
+            code_to_name = {code: name for name, code in language_data.items()}
+            language_name = code_to_name.get(language, language)
+    except (FileNotFoundError, json.JSONDecodeError):
+        # Fallback to just using the language code
+        language_name = language
 
     # Format the batch data for the prompt
     formatted_data = []
@@ -207,14 +218,14 @@ def _select_best_batch(
     # Get the system prompt
     system_prompt = get_system_prompt(
         "select_translations",
-        language=language,
+        language=language_name,
         project_context=project_context
-    ) + "\nRespond with a JSON object containing a 'selections' array with the best translation for each input string in order."
+    ) + f"\nRespond with a JSON object containing a 'selections' array with the best {language_name} translation for each input string in order."
 
     # Create the technical prompt
     technical_prompt = {
         "system": system_prompt,
-        "user": f"Please analyze the following data and select the best translation option for each string. Respond with a JSON array of selected translations in the same order as the input:\n{json.dumps(formatted_data, ensure_ascii=False, indent=2)}",
+        "user": f"Please analyze the following data and select the best {language_name} ({language}) translation option for each string. Respond with a JSON array of selected translations in the same order as the input:\n{json.dumps(formatted_data, ensure_ascii=False, indent=2)}",
         "response_format": {"type": "json_object"}
     }
 

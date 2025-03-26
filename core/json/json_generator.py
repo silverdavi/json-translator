@@ -44,8 +44,8 @@ def generate_translated_jsons(
     Generate translated JSON files from refined translations.
 
     Args:
-        refined: Dictionary mapping filenames to dictionaries mapping paths to
-               dictionaries mapping languages to refined translations
+        refined: Dictionary mapping filenames to dictionaries mapping languages to
+                dictionaries mapping paths to refined translations
         json_files: Original JSON files
         languages: List of target languages
         output_dir: Directory to save translated JSON files
@@ -56,18 +56,21 @@ def generate_translated_jsons(
     """
     translated_jsons = {}
 
-    for filename, paths in refined.items():
+    for filename, lang_paths in refined.items():
         translated_jsons[filename] = {}
 
         # Create a translated JSON for each language
         for language in languages:
+            # Skip if this language wasn't processed
+            if language not in lang_paths:
+                print(f"Skipping {language} for {filename} (no translations available)")
+                continue
+                
             # Start with a deep copy of the original JSON
             translated_json = copy.deepcopy(json_files[filename])
 
             # Replace strings with translations
-            for path, lang_translations in paths.items():
-                translation = lang_translations[language]
-
+            for path, translation in lang_paths[language].items():
                 # Navigate to the path
                 _set_value_at_path(translated_json, path, translation)
 

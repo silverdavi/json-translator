@@ -120,7 +120,7 @@ def refine_translations(
                 batch = refinement_data[i:i + batch_size]
                 
                 # Refine this batch
-                batch_refined = _refine_batch(batch, language, model, original_jsons[filename], project_context)
+                batch_refined = _refine_batch(batch, language, model, filename, project_context)
                 
                 # Store refined translations
                 for item in batch_refined:
@@ -173,7 +173,7 @@ def _refine_batch(
         model: str,
         filename: str,
         project_context: str = None
-) -> List[str]:
+) -> List[Dict]:
     """
     Refine a batch of translations.
 
@@ -185,14 +185,24 @@ def _refine_batch(
         project_context: Custom project context (or None to use default)
 
     Returns:
-        List of refined translations
+        List of dictionaries containing paths and refined translations
 
     Raises:
         ValueError: If batch is empty or invalid
-        RuntimeError: If API call fails and no fallback is possible
     """
     if not batch:
         raise ValueError("batch cannot be empty")
+
+    # Get language name from language code by loading languages.json
+    try:
+        with open("data/languages.json", "r", encoding="utf-8") as f:
+            language_data = json.load(f)
+            # Swap keys and values to get a mapping from code to name
+            code_to_name = {code: name for name, code in language_data.items()}
+            language_name = code_to_name.get(language, language)
+    except (FileNotFoundError, json.JSONDecodeError):
+        # Fallback to just using the language code
+        language_name = language
 
     # Validate batch data structure
     for i, item in enumerate(batch):
@@ -206,14 +216,14 @@ def _refine_batch(
     # Get the appropriate system prompt using the project context
     system_prompt = get_system_prompt(
         "refine_translations",
-        language=language,
+        language=language_name,
         project_context=project_context
-    ) + "\nRespond with a JSON object containing a 'refined_translations' array."  # Add explicit JSON mention
+    ) + f"\nRespond with a JSON object containing a 'refined_translations' array of improved {language_name} translations."
 
     # Use the provided wrapper function with simplified response format
     technical_prompt = {
         "system": system_prompt,
-        "user": f"Please refine the following translations and provide your response in JSON format:\nFile: {filename}\n{json.dumps(batch, indent=2)}",  # Add explicit JSON mention
+        "user": f"Please refine the following {language_name} ({language}) translations and provide your response in JSON format:\nFile: {filename}\n{json.dumps(batch, indent=2)}",
         "response_format": {"type": "json_object"}
     }
 
@@ -225,19 +235,54 @@ def _refine_batch(
         
         if "refined_translations" not in response_data:
             print("Missing 'refined_translations' in response")
-            return [item["translation"] for item in batch]  # Fallback to original
+            # Fallback to original translations
+            return [{"path": item["path"], "refined": item["translation"]} for item in batch]
             
         refined = response_data["refined_translations"]
         
+        if not isinstance(refined, list):
+            print(f"Invalid refined_translations format. Expected list, got {type(refined)}")
+            return [{"path": item["path"], "refined": item["translation"]} for item in batch]
+        
         if len(refined) != len(batch):
             print(f"Mismatch in refined translations count. Expected {len(batch)}, got {len(refined)}")
-            return [item["translation"] for item in batch]  # Fallback to original
-            
-        return [str(trans) if trans else item["translation"] for trans, item in zip(refined, batch)]
+            return [{"path": item["path"], "refined": item["translation"]} for item in batch]
+        
+        # Process refined translations, handling both string and dictionary formats
+        result = []
+        for i, (item, refined_item) in enumerate(zip(batch, refined)):
+            if isinstance(refined_item, dict) and "translation" in refined_item:
+                # Format where each refined item is a dictionary with a "translation" field
+                result.append({"path": item["path"], "refined": str(refined_item["translation"])})
+            elif isinstance(refined_item, dict) and "refined" in refined_item:
+                # Format where each refined item is a dictionary with a "refined" field
+                result.append({"path": item["path"], "refined": str(refined_item["refined"])})
+            elif isinstance(refined_item, dict) and "refined_translation" in refined_item:
+                # Format where each refined item is a dictionary with a "refined_translation" field
+                result.append({"path": item["path"], "refined": str(refined_item["refined_translation"])})
+            elif isinstance(refined_item, dict) and "path" in refined_item and any(key in refined_item for key in ["translation", "refined", "refined_translation"]):
+                # Format where each refined item has both path and translation
+                for key in ["translation", "refined", "refined_translation"]:
+                    if key in refined_item:
+                        result.append({"path": refined_item["path"], "refined": str(refined_item[key])})
+                        break
+                else:
+                    # If we didn't find a translation, use the original
+                    result.append({"path": item["path"], "refined": item["translation"]})
+            elif isinstance(refined_item, str):
+                # Format where each refined item is just a string
+                result.append({"path": item["path"], "refined": refined_item})
+            else:
+                # Fallback to original translation
+                print(f"Unrecognized format for refined item {i}: {refined_item}")
+                result.append({"path": item["path"], "refined": item["translation"]})
+                
+        return result
         
     except Exception as e:
         print(f"Error during refinement: {str(e)}")
-        return [item["translation"] for item in batch]  # Fallback to original
+        # Fallback to original translations
+        return [{"path": item["path"], "refined": item["translation"]} for item in batch]
 
 
 # Example usage (for testing)

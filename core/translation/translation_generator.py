@@ -180,15 +180,27 @@ def _generate_batch_options(
     Returns:
         List of lists of translation options
     """
+    # Get language name from language code by loading languages.json
+    try:
+        with open("data/languages.json", "r", encoding="utf-8") as f:
+            language_data = json.load(f)
+            # Swap keys and values to get a mapping from code to name
+            code_to_name = {code: name for name, code in language_data.items()}
+            language_name = code_to_name.get(language, language)
+    except (FileNotFoundError, json.JSONDecodeError):
+        # Fallback to just using the language code
+        language_name = language
+    
     # Get the appropriate system prompt using the project context
     system_prompt = get_system_prompt(
         "generate_options",
-        language=language,
+        language=language_name,
         options_count=options_count,
         project_context=project_context
     )
 
-    user_message = "Strings to translate:\n" + "\n".join(strings)
+    # Add explicit instruction to translate to the specific language
+    user_message = f"Translate the following strings to {language_name} ({language}):\n" + "\n".join(strings)
 
     # Use the provided wrapper function
     technical_prompt = {

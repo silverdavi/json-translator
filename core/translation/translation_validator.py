@@ -12,6 +12,17 @@ from typing import Dict, List, Any, Tuple, Optional
 from utils.api.util_call import call_openai
 from utils.config.context_configuration import get_system_prompt
 
+def get_language_name(language_code: str) -> str:
+    """Get the full language name from a language code by loading languages.json."""
+    try:
+        with open("data/languages.json", "r", encoding="utf-8") as f:
+            language_data = json.load(f)
+            # Swap keys and values to get a mapping from code to name
+            code_to_name = {code: name for name, code in language_data.items()}
+            return code_to_name.get(language_code, language_code)
+    except (FileNotFoundError, json.JSONDecodeError):
+        # Fallback to just using the language code
+        return language_code
 
 def validate_translations(
         translated_jsons: Dict[str, Dict[str, Dict]],
@@ -142,7 +153,7 @@ def validate_translations(
 
             # Validate translation quality
             quality_score, quality_details = _validate_translation_quality(
-                original_json, translated_json, language, model, project_context
+                original_json, translated_json, language, model, project_context, batch_size
             )
 
             # Store validation results
@@ -247,7 +258,8 @@ def _validate_translation_quality(
         translated: Dict,
         language: str,
         model: str,
-        project_context: str = None
+        project_context: str = None,
+        batch_size: int = 20
 ) -> Tuple[float, Dict]:
     """
     Validate the quality of translations using the validation model.
@@ -258,6 +270,7 @@ def _validate_translation_quality(
         language: Target language
         model: Model to use for validation
         project_context: Custom project context (or None to use default)
+        batch_size: Number of strings to process in each batch
 
     Returns:
         Tuple of (average quality score, quality details dictionary with per-sentence scores)
@@ -372,45 +385,44 @@ def _validate_translation_batch(
         project_context: str = None
 ) -> Tuple[List[float], List[Dict]]:
     """
-    Validate a batch of translations and return scores and details.
+    Validate a batch of translations.
 
     Args:
-        batch: List of dictionaries with original strings and translations
+        batch: List of dictionaries with original and translated text
         language: Target language
         model: Model to use for validation
         project_context: Custom project context (or None to use default)
 
     Returns:
-        Tuple of (list of scores, list of quality details with categories)
-
-    Raises:
-        ValueError: If batch is empty or invalid
-        RuntimeError: If API call fails and no fallback is possible
+        Tuple of (list of scores, list of detailed assessments)
     """
     if not batch:
-        raise ValueError("batch cannot be empty")
+        return [], []
 
-    # Validate batch data structure
-    for i, item in enumerate(batch):
-        if not isinstance(item, dict):
-            raise ValueError(f"Invalid item type at index {i}: expected dict, got {type(item)}")
-        if "path" not in item or "original" not in item or "translation" not in item:
-            raise ValueError(f"Missing required fields at index {i}: path, original, translation")
+    # Get language name from the code
+    language_name = get_language_name(language)
 
-    # Get the appropriate system prompt using the project context
+    # Get the validation prompt
     system_prompt = get_system_prompt(
         "validate_translations",
-        language=language,
+        language=language_name,
         project_context=project_context
-    ) + "\nFor each translation, also provide category scores for: accuracy, fluency, terminology, cultural_appropriateness, and formatting."
+    )
 
-    user_message = "Translations to evaluate:\n" + json.dumps(batch, indent=2)
+    user_message = (
+        f"Please evaluate the quality of these {language_name} ({language}) translations " 
+        f"and rate each on a scale of 0-100. Respond with a JSON object containing: "
+        f"1) 'scores' - an array of numerical scores (0-100) for each translation "
+        f"2) 'assessments' - an array of objects with 'comments' explaining issues and " 
+        f"category scores for accuracy, fluency, terminology, cultural_appropriateness, and formatting."
+        f"\n\n{json.dumps(batch, ensure_ascii=False, indent=2)}"
+    )
 
     # Use the provided wrapper function
     technical_prompt = {
         "system": system_prompt,
         "user": user_message,
-        "response_format": "json"
+        "response_format": {"type": "json_object"}
     }
 
     try:

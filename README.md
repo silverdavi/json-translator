@@ -163,4 +163,97 @@ Contributions are welcome! Please see [CONTRIBUTING.md](CONTRIBUTING.md) for gui
 
 ## License
 
+This project is licensed under the terms of the LICENSE file included in this repository.
+
+## Output Structure
+
+The translation pipeline generates the following output structure:
+
+```
+output_dir/
+├── {language_code}/              # Translated JSON files for each language
+│   ├── file1.json
+│   └── file2.json
+├── validated/                    # Validation results
+│   ├── file1_{lang}_validation.json
+│   └── file2_{lang}_validation.json
+├── reports/                      # Visualization reports
+│   └── report_{timestamp}/       # Report for each pipeline run
+│       ├── summary.md            # Comprehensive summary with statistics
+│       ├── score_distribution.png  # Histogram of translation scores
+│       ├── category_radar_{lang}.png  # Radar chart of category scores per language
+│       └── low_score_examples.md  # Examples of translations with low scores
+└── logs/                        # Pipeline execution logs
+    ├── translation_report_{timestamp}.json
+    └── translation_report_{timestamp}.csv
+```
+
+### Translation Files
+The translated JSON files are located in the `{output_dir}/{language_code}/` directory. Each file maintains the same structure as the source file but with translated content.
+
+### Validation Results
+Detailed validation results for each translation are stored in the `validated/` directory. These files contain:
+- Structure validation score
+- Quality validation score
+- Detailed quality metrics
+- Individual translation scores and comments
+
+### Visualization Reports
+Comprehensive visualization reports are generated in the `reports/` directory. Each pipeline run creates a new report directory with timestamp. Reports include:
+
+#### summary.md
+A comprehensive markdown report containing:
+- Translation statistics (total strings, files processed)
+- Score distribution breakdown (perfect, excellent, good, fair, poor)
+- Overall statistics (average, median, min, max scores)
+- Category averages (accuracy, fluency, terminology, etc.)
+- File-by-file statistics
+- Example translations from each score group
+
+#### Visualization Images
+- `score_distribution.png`: Histogram showing the distribution of translation scores
+- `category_radar_{lang}.png`: Radar chart showing the average scores across quality categories
+
+### Logs
+Execution logs and CSV reports are stored in the `logs/` directory, providing detailed information about the translation process.
+
+## Running the Visualization Tool Separately
+
+If you want to generate visualization reports from existing validation files without running the full translation pipeline, you can use the visualization script:
+
+```bash
+python run_visualization.py
+```
+
+This will:
+1. Look for validation files in the `data/translations/validated/` directory
+2. Generate comprehensive reports in `data/translations/reports/report_{timestamp}/`
+3. Create visualizations for each language and an overall summary
+
+You can also modify the script to specify custom input and output directories.
+
+## Interpreting the Reports
+
+### Score Categories
+Translations are grouped into the following score categories:
+- **Perfect (100)**: Flawless translations
+- **Excellent (95-99)**: High-quality translations with minor issues
+- **Good (90-94)**: Good translations with some room for improvement
+- **Fair (80-89)**: Acceptable translations that may need revision
+- **Poor (<80)**: Problematic translations that require significant improvement
+
+### Quality Categories
+The radar chart visualizes scores across five quality dimensions:
+- **Accuracy**: How accurately the translation conveys the original meaning
+- **Fluency**: How natural and fluent the translation sounds
+- **Terminology**: How consistent and appropriate the terminology is
+- **Cultural Appropriateness**: How well the translation fits the target culture
+- **Formatting**: How well the translation maintains proper formatting
+
+## Contributing
+
+Contributions are welcome! Please see [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines.
+
+## License
+
 This project is licensed under the terms of the LICENSE file included in this repository. 

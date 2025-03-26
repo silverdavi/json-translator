@@ -6,8 +6,8 @@ Provides a simplified interface for interacting with LLM APIs.
 import os
 import logging
 from typing import Dict, Any, Optional, List, Union
-from llm_api import LLMApi
-from config import API_CONFIG
+from utils.api.llm_api import LLMApi
+from utils.config.config import API_CONFIG
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -108,4 +108,4 @@ def call_openai(
             return client.call_model(prompt)
     except Exception as e:
         logger.error(f"Error calling OpenAI ({model}): {e}")
-        raise
+        raise 

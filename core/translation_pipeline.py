@@ -11,16 +11,16 @@ from pathlib import Path
 from typing import Dict, List, Any, Optional
 from tqdm import tqdm
 
-from config import get_output_dirs, Config
-from json_extractor import extract_strings
-from translation_generator import generate_translation_options
-from translation_selector import select_best_translations
-from translation_refiner import refine_translations
-from json_generator import generate_translated_jsons
-from translation_validator import validate_translations
-from report_generator import generate_summary_report
-from context_generator import generate_context_configuration
-from utils.logging_config import model_usage
+from utils.config.config import get_output_dirs, Config
+from core.json.json_extractor import extract_strings
+from core.translation.translation_generator import generate_translation_options
+from core.translation.translation_selector import select_best_translations
+from core.translation.translation_refiner import refine_translations
+from core.json.json_generator import generate_translated_jsons
+from core.translation.translation_validator import validate_translations
+from utils.reporting.report_generator import generate_summary_report
+from utils.config.context_generator import generate_context_configuration
+from utils.logging.logging_config import model_usage
 
 
 class TranslationPipeline:

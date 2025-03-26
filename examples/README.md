@@ -1,79 +1,89 @@
-# Translation Examples
+# Examples
 
-This directory contains sample JSON files that demonstrate different complexity levels for the JSON translation pipeline. These examples are intended to help you understand how to structure your own translation files.
+This directory contains example JSON files for demonstrating and testing the JSON Translator.
 
 ## Directory Structure
 
-- **simple/**: Basic flat JSON structure with simple key-value pairs
-- **nested/**: Nested JSON structure with multiple levels of hierarchy
-- **complex/**: Complex JSON structure with arrays, mixed types, and placeholders
+```
+examples/
+├── en/                 # Source English JSON files
+│   ├── homepage.json   # Simple homepage translations
+│   └── dashboard.json  # More complex nested translations
+└── output/             # Generated output translations
+    ├── es/             # Spanish translations
+    ├── fr/             # French translations
+    └── ...             # Other language directories
+```
 
-## Simple Example
+## File Descriptions
 
-The simple example demonstrates a flat JSON structure with basic key-value pairs. This is suitable for simple applications with few translation strings.
+### Homepage (Simple)
+
+`homepage.json` is a simple flat JSON file with basic UI strings:
 
 ```json
 {
   "welcome": "Welcome to our application",
   "login": "Log in",
-  "signup": "Sign up"
+  "signup": "Sign up",
+  "logout": "Log out",
+  "settings": "Settings",
+  "profile": "Profile",
+  "help": "Help",
+  "about": "About"
 }
 ```
 
-## Nested Example
+### Dashboard (Nested)
 
-The nested example demonstrates a hierarchical JSON structure with multiple levels of nesting. This is suitable for organizing translations by feature or section.
+`dashboard.json` demonstrates more complex nested JSON structure:
 
 ```json
 {
+  "app": {
+    "name": "Sample Application",
+    "version": "1.0.0"
+  },
   "navigation": {
     "home": "Home",
+    "dashboard": "Dashboard",
+    "settings": "Settings",
     "profile": {
       "view": "View Profile",
-      "edit": "Edit Profile"
+      "edit": "Edit Profile",
+      "picture": "Change Picture"
     }
   },
   "messages": {
     "success": {
-      "login": "Successfully logged in"
+      "login": "Successfully logged in",
+      "signup": "Account created successfully",
+      "update": "Your information has been updated"
+    },
+    "errors": {
+      "login": "Invalid username or password",
+      "server": "Server connection error",
+      "validation": "Please check your input and try again"
     }
+  },
+  "buttons": {
+    "save": "Save",
+    "cancel": "Cancel",
+    "delete": "Delete",
+    "confirm": "Confirm"
   }
 }
 ```
 
-## Complex Example
+## Running the Examples
 
-The complex example demonstrates advanced JSON features including:
-
-1. **Arrays**: Lists of items that need translation
-2. **Mixed types**: Combining strings, numbers, booleans, and objects
-3. **Placeholders**: Variables embedded in strings like `{username}` that should be preserved during translation
-
-```json
-{
-  "dashboard": {
-    "welcome": "Welcome back, {username}!",
-    "statistics": {
-      "items": [
-        {
-          "label": "Projects",
-          "description": "You have {count} active projects"
-        }
-      ]
-    }
-  }
-}
-```
-
-## Using These Examples
-
-You can use these examples to test the translation pipeline:
+To translate these example files, run:
 
 ```bash
-python json_translator_main.py --input-dir "examples/simple/" --output-dir "output/" --languages "Spanish,French,German"
+python json_translator_main.py --source examples/en --languages Spanish,French,German --output examples/output
 ```
 
-When creating your own translation files, choose a structure that best matches your application's complexity and organization needs.
+The translated files will be generated in the `output` directory, organized by language code.
 
 ## Notes for Translators
 

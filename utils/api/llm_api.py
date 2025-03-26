@@ -7,7 +7,7 @@ import time
 import logging
 from openai import OpenAI
 from typing import List, Dict, Any, Optional, Union
-from config import API_CONFIG
+from utils.config.config import API_CONFIG
 
 # Configure logging
 logger = logging.getLogger(__name__)
@@ -147,4 +147,4 @@ class LLMApi:
             "total_calls": self.call_count,
             "last_call_time": self.last_call_time,
             "last_response_length": len(self.last_response)
-        }
+        } 

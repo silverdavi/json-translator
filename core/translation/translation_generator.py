@@ -9,8 +9,8 @@ import json
 from typing import Dict, List, Any, Optional
 
 # Import the user-provided OpenAI wrapper and context configuration
-from util_call import call_openai
-from context_configuration import get_system_prompt
+from utils.api.util_call import call_openai
+from utils.config.context_configuration import get_system_prompt
 
 def generate_translation_options(
     extracted: Dict[str, Dict[str, str]],
@@ -249,4 +249,4 @@ if __name__ == "__main__":
         for path, lang_options in paths.items():
             print(f"\nPath: {path}, Original: {extracted[filename][path]}")
             for lang, opts in lang_options.items():
-                print(f"  {lang}: {opts}")
+                print(f"  {lang}: {opts}") 

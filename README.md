@@ -1,168 +1,98 @@
-# JSON Translation Pipeline
+# JSON Translator
 
-A powerful tool for translating JSON files into multiple languages using Large Language Models. The pipeline automatically extracts strings, generates translation options, selects the best translations, refines them, and validates the results.
+A powerful tool for automatically translating JSON localization files to multiple languages using Large Language Models (LLMs).
+
+## Project Overview
+
+JSON Translator is designed to help developers, content creators, and localization teams quickly translate UI strings and other content stored in JSON format. The tool uses OpenAI's API to produce high-quality translations that maintain proper context, formatting, and consistency.
 
 ## Features
 
-- **Automatic Context Generation**: Provide a description of your project, and the system will generate specialized translation prompts.
-- **Multiple Languages**: Translate to any language supported by the underlying LLM.
-- **Translation Options**: Generate multiple translation options for each string and select the best one.
-- **Quality Refinement**: Refine translations to improve quality and consistency.
-- **Validation**: Automated validation of translation quality with scoring.
-- **Comprehensive Reports**: Generate detailed reports of the translation process.
-- **Configurable**: Customize models, batch sizes, and other parameters.
+- **JSON Structure Preservation**: Maintains your original JSON structure while replacing the content with translations
+- **Multiple Language Support**: Translate to any language supported by the underlying LLM
+- **Batch Processing**: Efficiently processes multiple files and languages
+- **Mock Mode**: Test the pipeline without making API calls
+- **Detailed Logging**: Track progress and identify issues
+- **Flexible Configuration**: Customize the translation process based on your needs
 
-## Model Selection
+## Project Structure
 
-The pipeline uses a combination of specialized models for different tasks:
-
-- **Options Generation (o1)**: Uses a chain-of-thought model to generate multiple translation options. This model excels at creative thinking and generating diverse alternatives.
-- **Selection & Validation (gpt-4o)**: Uses a strong non-chain-of-thought model for critical evaluation tasks. This model is better at direct decision-making and quality assessment.
-
-This combination leverages the strengths of each model type:
-- Chain-of-thought models (o1) are better at generating creative solutions and exploring multiple possibilities
-- Non-chain-of-thought models (gpt-4o) are more efficient at making direct decisions and evaluating quality
-
-## Installation
-
-1. Clone the repository:
-   ```
-   git clone https://github.com/yourusername/json-translation-pipeline.git
-   cd json-translation-pipeline
-   ```
-
-2. Create a virtual environment and activate it:
-   ```
-   python -m venv venv
-   source venv/bin/activate  # On Windows: venv\Scripts\activate
-   ```
-
-3. Install dependencies:
-   ```
-   pip install -r requirements.txt
-   ```
-
-4. Create a `.env` file by copying the example:
-   ```
-   cp .env.example .env
-   ```
-
-5. Edit the `.env` file to add your API keys and customize settings.
-
-## Usage
-
-### Basic Usage
-
-Translate JSON files to multiple languages:
-
-```bash
-python json_translator_main.py --input-dir "examples/" --output-dir "output/" --languages "Thai,Malay,Simplified Chinese,Traditional Chinese,Hebrew,Korean,Burmese" --options-model "o1" --selection-model "gpt-4o" --refinement-model "o1" --validation-model "gpt-4o" --options-count 4
+```
+json-translator/
+├── core/                     # Core functionality modules
+│   ├── extraction/           # JSON extraction functionality
+│   │   └── json_extractor.py # Extract translatable strings from JSON
+│   ├── generation/           # JSON generation functionality
+│   │   └── json_generator.py # Generate translated JSON files
+│   ├── refinement/           # Translation refinement
+│   ├── translation/          # Translation logic
+│   └── validation/           # Validation logic
+├── data/                     # Data files
+│   ├── languages.json        # Language code mappings
+│   └── templates/            # Template files
+├── examples/                 # Example files
+│   ├── en/                   # Source English JSON files
+│   │   ├── homepage.json     # Simple homepage translations
+│   │   └── dashboard.json    # More complex nested translations
+│   └── output/               # Generated output files
+├── prompts/                  # LLM prompt templates
+├── tests/                    # Unit and integration tests
+├── utils/                    # Utility functions
+│   ├── logging/              # Logging utilities
+│   └── validation/           # Validation utilities
+├── .env.example              # Example environment variables
+├── .gitignore                # Git ignore file
+├── CODE_OF_CONDUCT.md        # Code of conduct for contributors
+├── CONTRIBUTING.md           # Guidelines for contributors
+├── LICENSE                   # Project license
+└── requirements.txt          # Python dependencies
 ```
 
-### Advanced Usage
+## Overview
 
-Generate specialized context for your project:
+The JSON Translator is organized into logical modules that handle different aspects of the translation pipeline:
 
-```bash
-python json_translator_main.py --languages "Spanish,French,German" --project-description "E-commerce website with product descriptions and user interface elements"
+1. **Extraction**: Extract translatable strings from JSON files
+2. **Translation**: Translate the extracted strings using LLMs
+3. **Refinement**: Refine and improve the translations
+4. **Validation**: Validate the translations for correctness
+5. **Generation**: Generate the final translated JSON files
+
+## Quick Start
+
+1. Clone the repository
+2. Install dependencies: `pip install -r requirements.txt`
+3. Configure your environment variables in `.env` (see `.env.example`)
+4. Run the translation pipeline:
+
+```python
+python json_translator_main.py --source examples/en --languages Spanish,French,German --output examples/output
 ```
 
-Customize models and options:
+## Examples
 
-```bash
-python json_translator_main.py --languages "Spanish,French,German" --options-count 5
-```
+The `examples` directory contains sample JSON files for testing:
 
-Force regeneration of context configuration:
+- `en/homepage.json`: Simple flat JSON with basic UI strings
+- `en/dashboard.json`: Nested JSON with more complex structure
 
-```bash
-python json_translator_main.py --languages "Spanish,French,German" --regenerate-context
-```
+## Languages
 
-### Example
-
-Input JSON:
-```json
-{
-  "welcome": "Welcome to our application",
-  "buttons": {
-    "save": "Save",
-    "cancel": "Cancel"
-  }
-}
-```
-
-Output JSON (Spanish):
-```json
-{
-  "welcome": "Bienvenido a nuestra aplicación",
-  "buttons": {
-    "save": "Guardar",
-    "cancel": "Cancelar"
-  }
-}
-```
-
-## Pipeline Steps
-
-1. **String Extraction**: Extract translatable strings from JSON files.
-2. **Option Generation**: Generate multiple translation options for each string using chain-of-thought model.
-3. **Selection**: Select the best translation from the options using non-chain-of-thought model.
-4. **Refinement**: Refine and improve the selected translations using chain-of-thought model.
-5. **JSON Generation**: Generate translated JSON files.
-6. **Validation**: Validate the quality of translations using non-chain-of-thought model.
-7. **Reporting**: Generate summary reports with quality metrics.
+Supported languages are defined in `data/languages.json`. You can add additional languages by updating this file.
 
 ## Configuration
 
-Configuration is managed through:
+Configuration options are available in `config.py`. You can customize:
 
-1. The `.env` file for API keys and default settings
-2. Command-line arguments for runtime settings
-3. JSON prompt templates in `prompts/default_prompts.json`
+- LLM settings
+- Translation options
+- Output formats
+- And more
 
-## Development
+## Contributing
 
-### Testing
-
-Run the test suite:
-
-```bash
-python -m unittest discover tests
-```
-
-### Adding New Features
-
-1. Fork the repository
-2. Create a feature branch
-3. Add your changes
-4. Add tests for your changes
-5. Submit a pull request
-
-## Requirements
-
-- Python 3.8+
-- OpenAI API key or compatible LLM API
-
-## Repository Structure
-
-The repository is organized as follows:
-
-- **examples/**: Sample JSON files for testing and demonstrating the pipeline
-  - **simple/**: Basic flat JSON structure
-  - **nested/**: Hierarchical JSON structure
-  - **complex/**: Advanced JSON with arrays and placeholders
-- **prompts/**: Configuration files for translation prompts
-- **tests/**: Unit and integration tests
-- **utils/**: Utility modules for logging, validation, etc.
-
-See the [examples README](examples/README.md) for more information about using the sample files.
+Contributions are welcome! Please see [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines.
 
 ## License
 
-This project is licensed under the MIT License - see the LICENSE file for details.
-
-## Acknowledgements
-
-- OpenAI for providing the underlying language models
-- Contributors who have improved this tool 
+This project is licensed under the terms of the LICENSE file included in this repository. 

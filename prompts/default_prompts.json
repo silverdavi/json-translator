@@ -4,22 +4,80 @@
   "tasks": {
     "generate_options": {
       "description": "generate multiple translation options for each string in {language}",
-      "instructions": "For each string, provide {options_count} different translation options that:\n1. Accurately convey the original meaning\n2. Use natural, fluent {language}\n3. Maintain appropriate formality and tone\n4. Consider the technical/UI context where relevant\n\nYou must respond with a JSON object containing a \"translations\" array, where each element is an array of {options_count} translation options."
+      "instructions": "You are an expert localization specialist for {language} with native-level fluency and cultural understanding.
+
+PROJECT CONTEXT: {project_context}
+
+Translate each of the following English UI strings into {language}, providing {options_count} distinct translation alternatives that:
+1. Faithfully convey the original meaning
+2. Use natural, fluent phrasing that feels native to {language} speakers
+3. Consider typical UI space constraints 
+4. Maintain consistency of terminology
+5. Preserve any variables, placeholders, or special formatting (e.g., {name}, %s, <b>bold</b>)
+
+For each string, your {options_count} translations should offer meaningfully different phrasings or word choices, not just minor variations.
+
+Return a properly formatted JSON object with a 'translations' array containing arrays of {options_count} translation options for each string."
     },
     
     "select_translations": {
       "description": "select the best translation option for each string in {language}",
-      "instructions": "For each string, consider:\n1. Accuracy of meaning\n2. Natural, fluent {language} usage\n3. Consistency with technical/UI terminology\n4. Appropriate formality and tone\n5. Cultural appropriateness\n\nYou must respond with a JSON object containing a \"selections\" array with the best translation for each input string in order."
+      "instructions": "You are a senior localization quality reviewer specialized in {language}.
+
+PROJECT CONTEXT: {project_context}
+
+For each UI string, evaluate the provided translation options and select the single BEST translation that:
+1. Most accurately conveys the original English meaning
+2. Uses natural, idiomatic {language} that a native speaker would expect
+3. Maintains proper terminology consistency for the domain
+4. Fits well in a user interface context
+5. Follows appropriate cultural conventions
+
+Critically evaluate each option's accuracy, fluency, and appropriateness. Select the translation that best balances all criteria.
+
+Return a properly formatted JSON object with a 'selections' array containing your chosen best translation for each input string."
     },
     
     "refine_translations": {
-      "description": "refine and improve the selected translations to {language}",
-      "instructions": "For each string, you are provided with its path in the JSON structure, the original English text, and a preliminary translation to {language}.\nImprove each translation to make it more natural, accurate, and appropriate.\nEnsure technical terms are translated correctly and consistently.\nYou must respond with a JSON object containing a \"refined_translations\" array with the improved translations in order."
+      "description": "refine and improve selected translations to {language}",
+      "instructions": "You are a professional {language} translator and linguistic consultant with expertise in software localization.
+
+PROJECT CONTEXT: {project_context}
+
+Review and refine each translation to ensure optimal quality. For each translation:
+1. Correct any grammatical errors, awkward phrasing, or mistranslations
+2. Ensure consistent terminology across the translation set
+3. Verify proper handling of UI-specific elements (buttons, menus, tooltips, etc.)
+4. Adapt the language to sound natural and contextually appropriate
+5. Preserve all variables/placeholders exactly as they appear in the original
+
+Make thoughtful improvements while maintaining the core meaning. Your refinements should elevate the translation quality while preserving the original intent.
+
+Return a properly formatted JSON object with a 'refined_translations' array containing your improved versions."
     },
     
     "validate_translations": {
       "description": "evaluate the quality of the final translations to {language}",
-      "instructions": "For each string, you will be provided with the original English text and its translation to {language}.\nRate each translation on a scale from 0 to 100, where:\n- 0-20: Completely incorrect or mistranslated\n- 21-40: Poor translation with major errors\n- 41-60: Acceptable but with noticeable issues\n- 61-80: Good translation with minor issues\n- 81-100: Excellent, natural-sounding translation\n\nYou must respond with a JSON object containing a \"scores\" array with your numerical scores in order."
+      "instructions": "You are a professional localization quality assurance specialist for {language}.
+
+PROJECT CONTEXT: {project_context}
+
+Evaluate each translation pair (original English and {language} translation) and rate the quality on a scale of 0-100:
+- 90-100: Perfect - Flawless translation that reads like original content in the target language
+- 80-89: Excellent - High-quality translation with at most minor stylistic issues
+- 70-79: Good - Correct translation with some minor fluency or style issues
+- 60-69: Acceptable - Adequately conveys meaning but has noticeable issues
+- 40-59: Needs Improvement - Contains errors that affect comprehension
+- 0-39: Poor - Serious errors, mistranslations, or unintelligible content
+
+For each translation, consider:
+1. Accuracy: Does it correctly convey the full meaning of the original?
+2. Fluency: Does it read naturally in {language}?
+3. Terminology: Are domain-specific terms translated consistently and correctly?
+4. Cultural Appropriateness: Is it adapted properly for the target culture?
+5. Formatting: Are placeholders, variables, and formatting preserved correctly?
+
+Return a properly formatted JSON object with a 'scores' array containing numerical scores (0-100) for each translation, along with brief comments on any issues found."
     },
     
     "generate_context": {

@@ -8,8 +8,8 @@ import json
 from typing import Dict, List, Any, Tuple
 
 # Import the user-provided OpenAI wrapper and context configuration
-from util_call import call_openai
-from context_configuration import get_system_prompt
+from utils.api.util_call import call_openai
+from utils.config.context_configuration import get_system_prompt
 
 
 def validate_translations(
@@ -377,4 +377,4 @@ if __name__ == "__main__":
             if results['quality_details']:
                 print(f"  Quality Details: {len(results['quality_details'])}")
                 for detail in results['quality_details'][:3]:  # Show first 3 details
-                    print(f"    - Path: {detail['path']}, Score: {detail['score']}")
+                    print(f"    - Path: {detail['path']}, Score: {detail['score']}") 

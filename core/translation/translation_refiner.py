@@ -9,8 +9,8 @@ import json
 from typing import Dict, List, Any, Optional
 
 # Import the user-provided OpenAI wrapper and context configuration
-from util_call import call_openai
-from context_configuration import get_system_prompt
+from utils.api.util_call import call_openai
+from utils.config.context_configuration import get_system_prompt
 
 
 def refine_translations(
@@ -267,4 +267,4 @@ if __name__ == "__main__":
             print(f"\nPath: {path}, Original: {json_files[filename][path]}")
             for lang, refinement in lang_refinements.items():
                 print(f"  {lang} (Selected): {selected[filename][path][lang]}")
-                print(f"  {lang} (Refined): {refinement}")
+                print(f"  {lang} (Refined): {refinement}") 

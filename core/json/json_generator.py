@@ -8,25 +8,29 @@ import json
 import copy
 from typing import Dict, List, Any
 
-# Language code mapping (for standard folder naming)
-LANGUAGE_CODES = {
-    "Thai": "th",
-    "Malay": "ms",
-    "Simplified Chinese": "zh-CN",
-    "Traditional Chinese": "zh-TW",
-    "Hebrew": "he",
-    "Spanish": "es",
-    "French": "fr",
-    "German": "de",
-    "Italian": "it",
-    "Japanese": "ja",
-    "Korean": "ko",
-    "Portuguese": "pt",
-    "Russian": "ru",
-    "Arabic": "ar",
-    "Burmese": "my"  # Added Burmese language code
-    # Add more languages as needed
-}
+def load_language_codes() -> Dict[str, str]:
+    """
+    Load language codes from the languages.json file.
+    
+    Returns:
+        Dictionary mapping language names to language codes
+    """
+    try:
+        with open("data/languages.json", "r", encoding="utf-8") as f:
+            return json.load(f)
+    except FileNotFoundError:
+        print("Warning: data/languages.json not found. Using fallback minimal language codes.")
+        # Fallback to minimal set of language codes
+        return {
+            "English": "en",
+            "Spanish": "es",
+            "French": "fr",
+            "German": "de",
+            "Chinese": "zh"
+        }
+
+# Load language codes from file
+LANGUAGE_CODES = load_language_codes()
 
 def generate_translated_jsons(
     refined: Dict[str, Dict[str, Dict[str, str]]],
@@ -136,7 +140,7 @@ def _set_value_at_path(json_data: Dict, path: str, value: Any) -> None:
 if __name__ == "__main__":
     # Sample data from previous step
     refined = {
-        "auth.json": {
+        "homepage.json": {
             "login": {
                 "Spanish": "Iniciar sesión",
                 "French": "Connexion"
@@ -160,7 +164,7 @@ if __name__ == "__main__":
 
     # Sample JSON files
     json_files = {
-        "auth.json": {
+        "homepage.json": {
             "login": "Login",
             "register": "Register"
         },
@@ -174,18 +178,18 @@ if __name__ == "__main__":
     languages = ["Spanish", "French"]
 
     # Create test output directory
-    os.makedirs("test_output", exist_ok=True)
+    os.makedirs("examples/output", exist_ok=True)
 
     # Generate translated JSONs
     translated_jsons = generate_translated_jsons(
         refined,
         json_files,
         languages,
-        "test_output"
+        "examples/output"
     )
 
     # Print results
     for filename, lang_jsons in translated_jsons.items():
         for language, translated_json in lang_jsons.items():
             print(f"\n{filename} - {language}:")
-            print(json.dumps(translated_json, ensure_ascii=False, indent=2))
+            print(json.dumps(translated_json, ensure_ascii=False, indent=2)) 

@@ -1,301 +1,298 @@
+#!/usr/bin/env python3
 """
-Main entry point for the JSON translation pipeline.
-Coordinates the translation workflow from extraction to validation.
+JSON Translator - Main Script
+
+This script orchestrates the full JSON translation process:
+1. Extract strings from source JSON files
+2. Translate the strings to target languages
+3. Generate translated JSON files
 """
 
 import os
-import json
-import datetime
+import sys
 import argparse
 import logging
-from pathlib import Path
-from typing import List, Dict, Optional
-from tqdm import tqdm
-import sys
+import json
+import time
+from typing import List, Dict, Any, Optional
+from dotenv import load_dotenv
+from openai import OpenAI
 
-# Import configuration
-from config import (
-    API_CONFIG, 
-    DEFAULT_INPUT_DIR, 
-    DEFAULT_OUTPUT_DIR, 
-    DEFAULT_OPTIONS_COUNT,
-    get_output_dirs
+# Import core modules
+from core.json.json_extractor import process_json_files
+from core.json.json_generator import generate_translated_jsons, load_language_codes
+from utils.validation.validation import run_preflight_checks
+
+# Configure logging
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s - %(levelname)s - %(message)s",
+    datefmt="%Y-%m-%d %H:%M:%S"
 )
+logger = logging.getLogger("json_translator")
 
-# Import modules for each pipeline step
-from json_extractor import extract_strings
-from translation_generator import generate_translation_options
-from translation_selector import select_best_translations
-from translation_refiner import refine_translations
-from json_generator import generate_translated_jsons
-from translation_validator import validate_translations
-from report_generator import generate_summary_report
-from context_generator import generate_context_configuration
-from utils.logging_config import setup_logging, model_usage
-from utils.validation import run_preflight_checks
-from translation_pipeline import TranslationPipeline
-from config import Config
-
-
-def run_translation_pipeline(
-        input_dir: str,
-        output_dir: str,
-        languages: List[str],
-        options_model: Optional[str] = None,
-        selection_model: Optional[str] = None,
-        refinement_model: Optional[str] = None,
-        validation_model: Optional[str] = None,
-        options_count: int = DEFAULT_OPTIONS_COUNT,
-        project_description: Optional[str] = None,
-        regenerate_context: bool = False
-):
-    """
-    Run the complete translation pipeline.
-    
-    Args:
-        input_dir: Directory containing input JSON files
-        output_dir: Directory for output files
-        languages: List of target languages
-        options_model: Model for generating translation options
-        selection_model: Model for selecting best translations
-        refinement_model: Model for refining translations
-        validation_model: Model for validating translations
-        options_count: Number of translation options to generate
-        project_description: Description of the project for context generation
-        regenerate_context: Whether to regenerate context configuration
-    """
-    start_time = datetime.datetime.now()
-    print(f"Starting translation pipeline at {start_time}")
-
-    # Get default models from config if not provided
-    openai_defaults = API_CONFIG.get("openai", {}).get("defaults", {})
-    options_model = options_model or openai_defaults.get("options_model", "o1")
-    selection_model = selection_model or openai_defaults.get("selection_model", "gpt-4o")
-    refinement_model = refinement_model or openai_defaults.get("refinement_model", "o1")
-    validation_model = validation_model or openai_defaults.get("validation_model", "gpt-4o")
-    
-    # Generate specialized context if provided or regeneration requested
-    if project_description or regenerate_context:
-        print("\nGenerating specialized context for the translation...")
-        # Use a higher quality model for context generation
-        context_model = openai_defaults.get("context_generator_model", "gpt-4o")
-        context_config = generate_context_configuration(
-            project_description=project_description,
-            model=context_model,
-            save_to_file=True
-        )
-        project_context = context_config.get("default_project_context", "")
-        print("Context generation complete.")
-    else:
-        # Use existing context configuration
-        project_context = None
-
-    # Create output directories
-    dirs = get_output_dirs(output_dir)
-
-    # Load JSON files
-    json_files = load_json_files(input_dir)
-
-    # Step 1: Extract strings for translation
-    print("\nStep 1: Extracting strings for translation...")
-    extracted = extract_strings(json_files, dirs["extracted"])
-
-    # Step 2: Generate translation options
-    print("\nStep 2: Generating translation options...")
-    options = generate_translation_options(
-        extracted,
-        languages,
-        options_model,
-        options_count,
-        dirs["options"],
-        project_context
-    )
-
-    # Step 3: Select best translations
-    print("\nStep 3: Selecting best translations...")
-    selected = select_best_translations(
-        options,
-        json_files,
-        languages,
-        selection_model,
-        dirs["selected"],
-        project_context
-    )
-
-    # Step 4: Refine translations
-    print("\nStep 4: Refining translations...")
-    refined = refine_translations(
-        selected,
-        json_files,
-        languages,
-        refinement_model,
-        dirs["refined"],
-        project_context
-    )
-
-    # Step 5: Generate translated JSON files
-    print("\nStep 5: Generating translated JSON files...")
-    translated_jsons = generate_translated_jsons(
-        refined,
-        json_files,
-        languages,
-        dirs["final"]
-    )
-
-    # Step 6: Validate translations
-    print("\nStep 6: Validating translations...")
-    validation_results = validate_translations(
-        translated_jsons,
-        json_files,
-        languages,
-        validation_model,
-        dirs["validated"],
-        project_context
-    )
-
-    # Generate summary report
-    print("\nGenerating summary report...")
-    generate_summary_report(
-        validation_results,
-        input_dir,
-        output_dir,
-        languages,
-        list(json_files.keys()),
-        {
-            "options_generation": options_model,
-            "selection": selection_model,
-            "refinement": refinement_model,
-            "validation": validation_model
-        },
-        dirs["logs"]
-    )
-
-    end_time = datetime.datetime.now()
-    duration = end_time - start_time
-    print(f"\nTranslation pipeline completed at {end_time}")
-    print(f"Total duration: {duration}")
-
-
-def load_json_files(input_dir: str) -> Dict[str, Dict]:
-    """
-    Load all JSON files from the input directory.
-    
-    Args:
-        input_dir: Directory containing JSON files
-        
-    Returns:
-        Dictionary mapping filenames to JSON data
-        
-    Raises:
-        RuntimeError: If no valid JSON files could be loaded
-    """
-    json_files = {}
-    errors = []
-
-    for filename in os.listdir(input_dir):
-        if filename.endswith(".json"):
-            filepath = os.path.join(input_dir, filename)
-            try:
-                with open(filepath, 'r', encoding='utf-8') as f:
-                    data = json.load(f)
-                    if not isinstance(data, dict):
-                        errors.append(f"Error in {filename}: JSON root must be an object")
-                        continue
-                    json_files[filename] = data
-                    print(f"Loaded {filename}")
-            except json.JSONDecodeError as e:
-                errors.append(f"Error in {filename}: Invalid JSON format - {str(e)}")
-            except UnicodeDecodeError as e:
-                errors.append(f"Error in {filename}: Invalid file encoding - {str(e)}")
-            except PermissionError as e:
-                errors.append(f"Error in {filename}: Permission denied - {str(e)}")
-            except Exception as e:
-                errors.append(f"Unexpected error in {filename}: {str(e)}")
-
-    if errors:
-        print("\nErrors encountered while loading JSON files:")
-        for error in errors:
-            print(f"- {error}")
-        if not json_files:
-            raise RuntimeError("No valid JSON files could be loaded")
-
-    return json_files
-
-
-def parse_args() -> argparse.Namespace:
+def parse_args():
     """Parse command line arguments."""
     parser = argparse.ArgumentParser(description="Translate JSON files to multiple languages")
-    parser.add_argument("--input-dir", required=True, help="Input directory containing JSON files")
-    parser.add_argument("--output-dir", required=True, help="Output directory for translated files")
+    parser.add_argument("--source", required=True, help="Directory containing source JSON files")
     parser.add_argument("--languages", required=True, help="Comma-separated list of target languages")
-    parser.add_argument("--project-description", help="Description of the project for context generation")
-    parser.add_argument("--options-model", default="o1", help="Model to use for generating translation options")
-    parser.add_argument("--selection-model", default="gpt-4o", help="Model to use for selecting best translation")
-    parser.add_argument("--refinement-model", default="o1", help="Model to use for refining translations")
-    parser.add_argument("--validation-model", default="gpt-4o", help="Model to use for validating translations")
-    parser.add_argument("--options-count", type=int, default=4, help="Number of translation options to generate")
-    parser.add_argument("--batch-size", type=int, default=20, help="Number of strings to process in each batch")
-    parser.add_argument("--regenerate-context", action="store_true", help="Force regeneration of context configuration")
-    parser.add_argument("--prompt-config", help="Path to custom prompt configuration file")
-    parser.add_argument("--log-level", default="INFO", choices=["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"],
-                      help="Set the logging level")
+    parser.add_argument("--output", required=True, help="Output directory for translated files")
+    parser.add_argument("--options-count", type=int, default=3, help="Number of translation options to generate")
+    parser.add_argument("--model", default="gpt-4o", help="LLM model to use for translation")
+    parser.add_argument("--debug", action="store_true", help="Enable debug logging")
+    parser.add_argument("--mock", action="store_true", help="Run in mock mode without API calls")
+    parser.add_argument("--check-only", action="store_true", help="Run only preflight checks without translation")
+    parser.add_argument("--batch-size", type=int, default=10, help="Number of strings to translate in each batch")
     return parser.parse_args()
 
+def setup_environment():
+    """Set up the environment and load environment variables."""
+    # Load environment variables from .env file
+    load_dotenv()
+    
+    # Check if API key is available
+    api_key = os.environ.get("OPENAI_API_KEY")
+    if not api_key:
+        logger.warning("OPENAI_API_KEY not found in environment variables.")
+        return False
+    
+    return True
 
-def main() -> None:
-    """Main entry point for the translation pipeline."""
-    # Parse arguments
+def validate_languages(languages: List[str]) -> List[str]:
+    """
+    Validate the provided languages against available language codes.
+    
+    Args:
+        languages: List of languages to validate
+        
+    Returns:
+        Validated list of languages
+    """
+    language_codes = load_language_codes()
+    valid_languages = []
+    
+    for language in languages:
+        language = language.strip()
+        # Check for exact match
+        if language in language_codes:
+            valid_languages.append(language)
+        else:
+            # Try to find a case-insensitive match
+            matches = [lang for lang in language_codes.keys() 
+                      if lang.lower() == language.lower()]
+            if matches:
+                logger.info(f"Using '{matches[0]}' instead of '{language}'")
+                valid_languages.append(matches[0])
+            else:
+                logger.warning(f"Language '{language}' not found in language codes. "
+                             f"Will use as provided, but translation quality may be affected.")
+                valid_languages.append(language)
+    
+    return valid_languages
+
+def translate_strings(strings: Dict[str, str], language: str, model: str, batch_size: int = 10) -> Dict[str, str]:
+    """
+    Translate a dictionary of strings to the target language using the OpenAI API.
+    
+    Args:
+        strings: Dictionary mapping paths to source strings
+        language: Target language for translation
+        model: LLM model to use for translation
+        batch_size: Number of strings to translate in each batch
+        
+    Returns:
+        Dictionary mapping paths to translated strings
+    """
+    # Initialize OpenAI client
+    api_key = os.environ.get("OPENAI_API_KEY")
+    client = OpenAI(api_key=api_key)
+    
+    # Prepare batches
+    paths = list(strings.keys())
+    values = list(strings.values())
+    translations = {}
+    
+    for i in range(0, len(paths), batch_size):
+        batch_paths = paths[i:i+batch_size]
+        batch_values = values[i:i+batch_size]
+        
+        # Prepare the prompt
+        source_text = "\n".join([f"{j+1}. {text}" for j, text in enumerate(batch_values)])
+        prompt = [
+            {"role": "system", "content": f"You are an expert translator to {language}. Translate the following texts to {language}. Keep the same format and meaning. Return ONLY the translations numbered the same way as the input."},
+            {"role": "user", "content": source_text}
+        ]
+        
+        try:
+            # Call the API
+            logger.debug(f"Translating batch {i//batch_size + 1} of {(len(paths) - 1)//batch_size + 1} to {language}")
+            response = client.chat.completions.create(
+                model=model,
+                messages=prompt
+            )
+            
+            # Extract translations
+            result = response.choices[0].message.content.strip()
+            
+            # Parse numbered responses
+            lines = result.split("\n")
+            batch_translations = []
+            
+            current_translation = ""
+            for line in lines:
+                line = line.strip()
+                if not line:
+                    continue
+                
+                # Check if line starts with a number
+                if line[0].isdigit() and "." in line[:5]:
+                    if current_translation:
+                        batch_translations.append(current_translation.strip())
+                    
+                    # Start a new translation
+                    parts = line.split(".", 1)
+                    if len(parts) > 1:
+                        current_translation = parts[1].strip()
+                    else:
+                        current_translation = ""
+                else:
+                    current_translation += " " + line
+            
+            # Add the last translation
+            if current_translation:
+                batch_translations.append(current_translation.strip())
+            
+            # Make sure we have the right number of translations
+            if len(batch_translations) != len(batch_paths):
+                logger.warning(f"Expected {len(batch_paths)} translations, but got {len(batch_translations)}. Adjusting...")
+                # Adjust the translations array
+                if len(batch_translations) < len(batch_paths):
+                    batch_translations.extend(["[Translation error]"] * (len(batch_paths) - len(batch_translations)))
+                else:
+                    batch_translations = batch_translations[:len(batch_paths)]
+            
+            # Store translations
+            for path, translation in zip(batch_paths, batch_translations):
+                translations[path] = translation
+            
+            # Wait a bit to avoid rate limits
+            time.sleep(0.5)
+            
+        except Exception as e:
+            logger.error(f"Error translating batch: {str(e)}")
+            # Add placeholders for failed translations
+            for path in batch_paths:
+                translations[path] = f"[Error: {str(e)[:50]}...]"
+    
+    return translations
+
+def main():
+    """Main function to run the translation pipeline."""
+    # Parse command line arguments
     args = parse_args()
     
-    # Set up logging
-    setup_logging(log_level=args.log_level)
-    logging.info("Starting JSON Translation Pipeline")
+    # Set logging level based on arguments
+    if args.debug:
+        logging.getLogger().setLevel(logging.DEBUG)
+        logger.debug("Debug logging enabled")
     
+    # Setup environment
+    logger.info("Setting up environment...")
+    env_ok = setup_environment()
+    if not env_ok and not args.mock:
+        logger.warning("Environment setup incomplete. Running in mock mode.")
+        args.mock = True
+    
+    # Run preflight checks
+    logger.info("Running preflight checks...")
+    checks_passed = run_preflight_checks(args.source, args.output)
+    if not checks_passed:
+        logger.error("Preflight checks failed. Please fix the issues and try again.")
+        return 1
+    
+    # If check-only mode, exit here
+    if args.check_only:
+        logger.info("Preflight checks completed successfully. Exiting in check-only mode.")
+        return 0
+    
+    # Split and validate languages
+    raw_languages = args.languages.split(",")
+    languages = validate_languages(raw_languages)
+    logger.info(f"Target languages: {', '.join(languages)}")
+    
+    # Process source JSON files
+    logger.info(f"Processing JSON files from {args.source}...")
     try:
-        # Run pre-flight checks
-        if not run_preflight_checks(args.input_dir, args.output_dir, args.prompt_config):
-            logging.error("Pre-flight checks failed. Exiting.")
-            sys.exit(1)
-        
-        # Initialize configuration
-        config = Config(
-            input_dir=args.input_dir,
-            output_dir=args.output_dir,
-            languages=args.languages.split(","),
-            options_model=args.options_model,
-            selection_model=args.selection_model,
-            refinement_model=args.refinement_model,
-            validation_model=args.validation_model,
-            options_count=args.options_count,
-            batch_size=args.batch_size,
-            project_description=args.project_description,
-            regenerate_context=args.regenerate_context,
-            prompt_config_path=args.prompt_config
-        )
-        
-        # Initialize and run pipeline
-        pipeline = TranslationPipeline(config)
-        
-        # Process files with progress bar
-        input_files = list(Path(args.input_dir).glob("**/*.json"))
-        with tqdm(total=len(input_files), desc="Processing files", unit="file") as pbar:
-            for file_path in input_files:
-                try:
-                    pipeline.process_file(file_path)
-                    pbar.update(1)
-                except Exception as e:
-                    logging.error(f"Error processing file {file_path}: {str(e)}")
-                    continue
-        
-        # Print model usage summary
-        model_usage.print_summary()
-        
-        logging.info("Translation pipeline completed successfully")
-        
+        extracted_strings, json_files = process_json_files(args.source)
     except Exception as e:
-        logging.error(f"Pipeline failed: {str(e)}")
-        sys.exit(1)
-
+        logger.error(f"Error processing JSON files: {str(e)}")
+        return 1
+    
+    # Display extracted information
+    total_strings = sum(len(strings) for strings in extracted_strings.values())
+    total_files = len(extracted_strings)
+    logger.info(f"Extracted {total_strings} strings from {total_files} files.")
+    
+    # If no strings found, exit
+    if total_strings == 0:
+        logger.warning("No strings found to translate. Check your source files.")
+        return 1
+    
+    # Perform translations
+    refined_translations = {}
+    
+    if args.mock:
+        # Use mock translations
+        logger.info("Running in mock mode with placeholder translations.")
+        for filename, paths in extracted_strings.items():
+            refined_translations[filename] = {}
+            for path, value in paths.items():
+                refined_translations[filename][path] = {}
+                for language in languages:
+                    # Mock translation
+                    refined_translations[filename][path][language] = f"[{language}] {value}"
+    else:
+        # Use real translations
+        logger.info("Starting translation process...")
+        for filename, paths in extracted_strings.items():
+            logger.info(f"Translating {filename}...")
+            refined_translations[filename] = {}
+            
+            for language in languages:
+                logger.info(f"Translating to {language}...")
+                translations = translate_strings(
+                    paths, language, args.model, args.batch_size
+                )
+                
+                # Store translations
+                for path, translation in translations.items():
+                    if path not in refined_translations[filename]:
+                        refined_translations[filename][path] = {}
+                    refined_translations[filename][path][language] = translation
+    
+    # Generate translated JSON files
+    logger.info(f"Generating translated JSON files in {args.output}...")
+    try:
+        translated_jsons = generate_translated_jsons(
+            refined_translations,
+            json_files,
+            languages,
+            args.output
+        )
+    except Exception as e:
+        logger.error(f"Error generating translated files: {str(e)}")
+        return 1
+    
+    logger.info(f"Translation complete. Files saved to {args.output}")
+    return 0
 
 if __name__ == "__main__":
-    main()
+    try:
+        exit_code = main()
+        sys.exit(exit_code)
+    except KeyboardInterrupt:
+        logger.info("Process interrupted by user.")
+        sys.exit(130)
+    except Exception as e:
+        logger.error(f"Unhandled exception: {str(e)}", exc_info=True)
+        sys.exit(1)

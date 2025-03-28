@@ -7,72 +7,52 @@ import os
 import logging
 import datetime
 from typing import Dict, Optional
+import json
 
 # Define model usage tracker for analytics
-class ModelUsageTracker:
-    """Track usage of different models throughout the pipeline."""
+class ModelUsage:
+    """Track and log model usage statistics."""
     
     def __init__(self):
-        """Initialize the usage tracker."""
-        self.model_usage = {}
-        self.start_time = datetime.datetime.now()
+        self.usage = {}
+        self.timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
     
-    def add_calls(self, model: str, calls: int = 1):
-        """Add API calls to the usage tracker."""
-        if model not in self.model_usage:
-            self.model_usage[model] = {'calls': 0, 'tokens': 0, 'words': 0}
-        self.model_usage[model]['calls'] += calls
-    
-    def add_tokens(self, model: str, tokens: int):
-        """Add token usage to the tracker."""
-        if model not in self.model_usage:
-            self.model_usage[model] = {'calls': 0, 'tokens': 0, 'words': 0}
-        self.model_usage[model]['tokens'] += tokens
-    
-    def add_words(self, model: str, words: int):
-        """Add word count as a proxy for token usage."""
-        if model not in self.model_usage:
-            self.model_usage[model] = {'calls': 0, 'tokens': 0, 'words': 0}
-        self.model_usage[model]['words'] += words
-        # Roughly estimate tokens as 1.3 * words
-        self.model_usage[model]['tokens'] += int(words * 1.3)
-        # Also count as a call
-        self.model_usage[model]['calls'] += 1
-    
-    def get_usage(self, model: Optional[str] = None) -> Dict:
-        """Get usage statistics for all models or a specific model."""
-        if model:
-            return self.model_usage.get(model, {'calls': 0, 'tokens': 0, 'words': 0})
-        return self.model_usage
+    def add_words(self, model: str, count: int):
+        """Add word count for a model."""
+        if model not in self.usage:
+            self.usage[model] = 0
+        self.usage[model] += count
     
     def print_summary(self):
-        """Print a summary of model usage."""
-        total_duration = datetime.datetime.now() - self.start_time
+        """Print summary of model usage."""
+        if not self.usage:
+            return
+            
+        print("\nModel Usage Summary:")
+        print("-" * 50)
+        total_words = 0
+        for model, words in self.usage.items():
+            print(f"{model}: {words:,} words")
+            total_words += words
+        print("-" * 50)
+        print(f"Total: {total_words:,} words")
         
-        logging.info(f"===== Model Usage Summary =====")
-        logging.info(f"Total duration: {total_duration}")
+        # Save usage to file
+        usage_dir = os.path.join("logs", "model_usage")
+        os.makedirs(usage_dir, exist_ok=True)
+        usage_file = os.path.join(usage_dir, f"usage_{self.timestamp}.json")
         
-        total_calls = sum(stats['calls'] for stats in self.model_usage.values())
-        total_tokens = sum(stats['tokens'] for stats in self.model_usage.values())
+        with open(usage_file, 'w') as f:
+            json.dump({
+                "timestamp": self.timestamp,
+                "usage": self.usage,
+                "total_words": total_words
+            }, f, indent=2)
         
-        logging.info(f"Total API calls: {total_calls}")
-        logging.info(f"Estimated total tokens: {total_tokens}")
-        
-        logging.info(f"Breakdown by model:")
-        for model, stats in self.model_usage.items():
-            logging.info(f"  - {model}: {stats['calls']} calls, ~{stats['tokens']} tokens")
-        
-        print(f"\n===== Model Usage Summary =====")
-        print(f"Total duration: {total_duration}")
-        print(f"Total API calls: {total_calls}")
-        print(f"Estimated total tokens: {total_tokens}")
-        
-        print(f"\nBreakdown by model:")
-        for model, stats in self.model_usage.items():
-            print(f"  - {model}: {stats['calls']} calls, ~{stats['tokens']} tokens")
+        print(f"\nUsage details saved to {usage_file}")
 
-# Global model usage tracker
-model_usage = ModelUsageTracker()
+# Create global instance
+model_usage = ModelUsage()
 
 def setup_logging(log_file: Optional[str] = None, log_level: str = "INFO"):
     """

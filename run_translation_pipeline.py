@@ -14,6 +14,8 @@ from typing import List
 from utils.config.config import Config
 from core.translation_pipeline import TranslationPipeline
 from dotenv import load_dotenv
+from utils.validation.validation import run_preflight_checks
+import time
 
 # Configure logging
 logging.basicConfig(
@@ -124,8 +126,16 @@ def main():
         logger.debug("Debug logging enabled")
     
     # Load environment variables and check API key
-    load_dotenv()
+    load_dotenv(override=True)  # Add override=True to force overwrite
     api_key = os.environ.get("OPENAI_API_KEY")
+    
+    # Print first 10 characters of API key for verification
+    if api_key:
+        print(f"API Key starts with: {api_key[:10]}...")
+        logger.info(f"API key loaded from: {os.environ.get('OPENAI_API_KEY')[:10]}...")
+    else:
+        logger.error("No OpenAI API key found in environment variables")
+        return 1
     
     if not args.mock and not api_key:
         logger.error("No OpenAI API key found. Please set OPENAI_API_KEY in your .env file or use --mock mode.")
@@ -152,6 +162,21 @@ def main():
     except Exception as e:
         logger.error(f"Error creating configuration: {str(e)}")
         return 1
+    
+    # Run preflight checks
+    if not run_preflight_checks(
+        input_dir=config.input_dir,
+        output_dir=config.output_dir,
+        prompt_config=config.prompt_config_path,
+        mock_mode=config.mock_mode
+    ):
+        logger.error("Preflight checks failed. Please fix the issues before proceeding.")
+        return 1
+    
+    # Add delay after preflight checks to avoid rate limits
+    if not config.mock_mode:
+        logger.info("Waiting 2 seconds before starting pipeline to avoid rate limits...")
+        time.sleep(2)
     
     # Initialize and run the pipeline
     try:

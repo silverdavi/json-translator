@@ -88,8 +88,8 @@ def generate_translated_jsons(
                 elif "traditional" in language.lower():
                     language_code = LANGUAGE_CODES.get("Traditional Chinese", "zh-TW")
 
-            # Create language-specific directory
-            lang_dir = os.path.join(output_dir, language_code)
+            # Create language-specific directory in translations folder
+            lang_dir = os.path.join(output_dir, "translations", language_code)
             os.makedirs(lang_dir, exist_ok=True)
 
             # Save the translated JSON using the original filename

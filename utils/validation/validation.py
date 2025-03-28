@@ -7,11 +7,47 @@ import os
 import json
 import logging
 from typing import Optional
+from openai import OpenAI
+import time
+
+def test_openai_access(api_key: str) -> bool:
+    """
+    Test OpenAI API access by making a simple completion request.
+    
+    Args:
+        api_key: OpenAI API key to test
+        
+    Returns:
+        Boolean indicating whether the API key is valid and working
+    """
+    try:
+        from utils.api.util_call import call_openai
+        
+        # Create a simple test prompt that includes the word 'json' for response_format compatibility
+        test_prompt = {
+            "system": "You are a helpful assistant. Please respond with a simple JSON test message.",
+            "user": "Return a simple JSON test response.",
+            "response_format": {"type": "json_object"}
+        }
+        
+        # Use the proper API wrapper with rate limiting
+        response = call_openai(
+            prompt=test_prompt,
+            model="gpt-4o",
+            timeout=10  # Add a reasonable timeout
+        )
+        
+        # If we got here, the API call was successful
+        return True
+    except Exception as e:
+        logging.error(f"OpenAI API access test failed: {str(e)}")
+        return False
 
 def run_preflight_checks(
     input_dir: str,
     output_dir: str,
     prompt_config: Optional[str] = None,
+    mock_mode: bool = False
 ) -> bool:
     """
     Run checks to validate configuration and environment before launching the pipeline.
@@ -20,6 +56,7 @@ def run_preflight_checks(
         input_dir: Input directory containing JSON files
         output_dir: Output directory for generated files
         prompt_config: Optional custom prompt configuration file
+        mock_mode: Whether to run in mock mode without API calls
         
     Returns:
         Boolean indicating whether all checks passed
@@ -64,10 +101,25 @@ def run_preflight_checks(
             logging.error(f"Error reading prompt configuration: {e}")
             checks_passed = False
     
-    # Check API keys and environment
-    if "OPENAI_API_KEY" not in os.environ and not os.path.exists(".env"):
-        logging.warning("OPENAI_API_KEY not found in environment variables or .env file")
-        logging.warning("You will need to provide an API key in the configuration")
+    # Check API key and access if not in mock mode
+    if not mock_mode:
+        api_key = os.environ.get("OPENAI_API_KEY")
+        if not api_key:
+            logging.error("OPENAI_API_KEY not found in environment variables")
+            checks_passed = False
+        else:
+            # Verify API key format
+            if not api_key.startswith(("sk-", "sk-proj-")):
+                logging.error("Invalid OpenAI API key format. Key should start with 'sk-' or 'sk-proj-'")
+                checks_passed = False
+            else:
+                # Test API access
+                logging.info("Testing OpenAI API access...")
+                if not test_openai_access(api_key):
+                    logging.error("Failed to connect to OpenAI API. Please check your API key and internet connection.")
+                    checks_passed = False
+                else:
+                    logging.info("OpenAI API access verified successfully")
     
     # Print check results
     if checks_passed:

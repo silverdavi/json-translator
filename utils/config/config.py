@@ -13,7 +13,7 @@ from dataclasses import dataclass, field
 # Load environment variables from .env file if it exists
 try:
     from dotenv import load_dotenv
-    load_dotenv()
+    load_dotenv(override=True)
 except ImportError:
     logging.info("dotenv package not found, skipping .env file loading")
 
@@ -32,9 +32,9 @@ API_CONFIG = {
             "refinement_model": os.environ.get("REFINEMENT_MODEL", "o1"),
             "validation_model": os.environ.get("VALIDATION_MODEL", "gpt-4o"),
             "context_generator_model": os.environ.get("CONTEXT_MODEL", "gpt-4o"),
-            "min_delay": float(os.environ.get("MIN_DELAY", "0.5")),
-            "max_retries": int(os.environ.get("MAX_RETRIES", "3")),
-            "retry_delay": int(os.environ.get("RETRY_DELAY", "1"))
+            "min_delay": float(os.environ.get("MIN_DELAY", "2.0")),
+            "max_retries": int(os.environ.get("MAX_RETRIES", "5")),
+            "retry_delay": int(os.environ.get("RETRY_DELAY", "2"))
         }
     }
 }
@@ -79,13 +79,16 @@ def get_output_dirs(base_output_dir: str) -> Dict[str, str]:
         Dictionary of output directories
     """
     dirs = {
-        "extracted": os.path.join(base_output_dir, "extracted"),
-        "options": os.path.join(base_output_dir, "options"),
-        "selected": os.path.join(base_output_dir, "selected"),
-        "refined": os.path.join(base_output_dir, "refined"),
-        "final": base_output_dir,
-        "validated": os.path.join(base_output_dir, "validated"),
-        "logs": os.path.join(base_output_dir, "logs")
+        "intermediate": os.path.join(base_output_dir, "intermediate"),
+        "extracted": os.path.join(base_output_dir, "intermediate", "extraction"),
+        "options": os.path.join(base_output_dir, "intermediate", "options"),
+        "selected": os.path.join(base_output_dir, "intermediate", "selection"),
+        "refined": os.path.join(base_output_dir, "intermediate", "refinement"),
+        "validated": os.path.join(base_output_dir, "intermediate", "validation"),
+        "logs": os.path.join(base_output_dir, "logs"),
+        "reports": os.path.join(base_output_dir, "logs", "reports"),
+        "model_usage": os.path.join(base_output_dir, "logs", "model_usage"),
+        "final": os.path.join(base_output_dir, "translations")
     }
     
     # Create directories if they don't exist

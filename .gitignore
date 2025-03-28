@@ -46,4 +46,11 @@ htmlcov/
 
 # Temporary files
 temp/
-tmp/ 
+tmp/
+
+# Translation pipeline output
+translations/
+intermediate/
+logs/
+reports/
+model_usage/ 

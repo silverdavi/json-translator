@@ -7,6 +7,7 @@ import os
 import json
 import datetime
 import logging
+import time
 from pathlib import Path
 from typing import Dict, List, Any, Optional
 from tqdm import tqdm
@@ -84,12 +85,52 @@ class TranslationPipeline:
         logging.info("Step 1: Extracting strings for translation...")
         extracted = extract_strings(json_files, self.output_dirs["extracted"])
         
-        # Step 2: Generate translation options
-        logging.info("Step 2: Generating translation options...")
-        with tqdm(total=len(self.config.languages), desc="Generating options", unit="language") as pbar:
-            options = generate_translation_options(
+        # Calculate estimated minimum processing time
+        total_strings = sum(len(strings) for strings in extracted.values())
+        total_languages = len(self.config.languages)
+        
+        # Calculate delays:
+        # - 5 seconds between languages
+        # - 2 seconds between steps (6 steps per language)
+        # - 2 seconds initial delay
+        delay_between_languages = 5
+        delay_between_steps = 2
+        initial_delay = 2
+        
+        total_delays = (
+            initial_delay +  # Initial delay
+            (total_languages - 1) * delay_between_languages +  # Delays between languages
+            total_languages * 6 * delay_between_steps  # Delays between steps for each language
+        )
+        
+        # Estimate API call time (rough estimate of 2 seconds per API call)
+        # Each string goes through 4 API calls (options, selection, refinement, validation)
+        api_call_time = total_strings * total_languages * 4 * 2
+        
+        estimated_min_time = total_delays + api_call_time
+        
+        logging.info(f"\nEstimated minimum processing time:")
+        logging.info(f"- Total strings to process: {total_strings}")
+        logging.info(f"- Number of languages: {total_languages}")
+        logging.info(f"- Total delays: {total_delays} seconds")
+        logging.info(f"- Estimated API call time: {api_call_time} seconds")
+        logging.info(f"- Total estimated minimum time: {estimated_min_time} seconds ({estimated_min_time/60:.1f} minutes)")
+        
+        # Process each language sequentially
+        options = {}
+        selected = {}
+        refined = {}
+        translated_jsons = {}
+        validation_results = {}
+        
+        for language in self.config.languages:
+            logging.info(f"Processing language: {language}")
+            
+            # Step 2: Generate translation options for this language
+            logging.info(f"Step 2: Generating translation options for {language}...")
+            lang_options = generate_translation_options(
                 extracted,
-                self.config.languages,
+                [language],  # Process only one language at a time
                 self.config.options_model,
                 self.config.options_count,
                 self.output_dirs["options"],
@@ -97,107 +138,103 @@ class TranslationPipeline:
                 batch_size=self.config.batch_size,
                 mock_mode=self.config.mock_mode
             )
-            pbar.update(len(self.config.languages))
+            options.update(lang_options)
             
             # Count words processed
-            for language in self.config.languages:
-                total_words = sum(
-                    len(text.split()) * self.config.options_count 
-                    for strings in extracted.values() 
-                    for text in strings.values()
-                )
-                model_usage.add_words(self.config.options_model, total_words)
-        
-        # Step 3: Select best translations
-        logging.info("Step 3: Selecting best translations...")
-        with tqdm(total=len(self.config.languages), desc="Selecting translations", unit="language") as pbar:
-            selected = select_best_translations(
-                options,
+            total_words = sum(
+                len(text.split()) * self.config.options_count 
+                for strings in extracted.values() 
+                for text in strings.values()
+            )
+            model_usage.add_words(self.config.options_model, total_words)
+            
+            # Step 3: Select best translations for this language
+            logging.info(f"Step 3: Selecting best translations for {language}...")
+            lang_selected = select_best_translations(
+                lang_options,
                 json_files,
-                self.config.languages,
+                [language],  # Process only one language at a time
                 self.config.selection_model,
                 self.output_dirs["selected"],
                 self.project_context,
                 batch_size=self.config.batch_size,
                 mock_mode=self.config.mock_mode
             )
-            pbar.update(len(self.config.languages))
+            selected.update(lang_selected)
             
             # Count words processed
-            for language in self.config.languages:
-                total_words = sum(
-                    len(str(options).split()) 
-                    for filename, lang_options in options.items()
-                    if language in lang_options
-                )
-                model_usage.add_words(self.config.selection_model, total_words)
-        
-        # Step 4: Refine translations
-        logging.info("Step 4: Refining translations...")
-        with tqdm(total=len(self.config.languages), desc="Refining translations", unit="language") as pbar:
-            refined = refine_translations(
-                selected,
+            total_words = sum(
+                len(str(options).split()) 
+                for filename, lang_options in lang_options.items()
+                if language in lang_options
+            )
+            model_usage.add_words(self.config.selection_model, total_words)
+            
+            # Step 4: Refine translations for this language
+            logging.info(f"Step 4: Refining translations for {language}...")
+            lang_refined = refine_translations(
+                lang_selected,
                 json_files,
-                self.config.languages,
+                [language],  # Process only one language at a time
                 self.config.refinement_model,
                 self.output_dirs["refined"],
                 self.project_context,
                 batch_size=self.config.batch_size,
                 mock_mode=self.config.mock_mode
             )
-            pbar.update(len(self.config.languages))
+            refined.update(lang_refined)
             
             # Count words processed
-            for language in self.config.languages:
-                total_words = sum(
-                    len(text.split()) 
-                    for filename, lang_selected in selected.items()
-                    if language in lang_selected
-                    for text in lang_selected[language].values()
-                )
-                model_usage.add_words(self.config.refinement_model, total_words)
-        
-        # Step 5: Generate translated JSON files
-        logging.info("Step 5: Generating translated JSON files...")
-        with tqdm(total=len(self.config.languages), desc="Generating JSON files", unit="language") as pbar:
-            translated_jsons = generate_translated_jsons(
-                refined,
+            total_words = sum(
+                len(text.split()) 
+                for filename, lang_selected in lang_selected.items()
+                if language in lang_selected
+                for text in lang_selected[language].values()
+            )
+            model_usage.add_words(self.config.refinement_model, total_words)
+            
+            # Step 5: Generate translated JSON files for this language
+            logging.info(f"Step 5: Generating translated JSON files for {language}...")
+            lang_translated = generate_translated_jsons(
+                lang_refined,
                 json_files,
-                self.config.languages,
+                [language],  # Process only one language at a time
                 self.output_dirs["final"]
             )
-            pbar.update(len(self.config.languages))
-        
-        # Step 6: Validate translations
-        logging.info("Step 6: Validating translations...")
-        with tqdm(total=len(self.config.languages), desc="Validating translations", unit="language") as pbar:
-            validation_results = validate_translations(
-                translated_jsons,
+            translated_jsons.update(lang_translated)
+            
+            # Step 6: Validate translations for this language
+            logging.info(f"Step 6: Validating translations for {language}...")
+            lang_validation = validate_translations(
+                lang_translated,
                 json_files,
-                self.config.languages,
+                [language],  # Process only one language at a time
                 self.config.validation_model,
                 self.output_dirs["validated"],
                 self.project_context,
                 batch_size=self.config.batch_size,
                 mock_mode=self.config.mock_mode
             )
-            pbar.update(len(self.config.languages))
+            validation_results.update(lang_validation)
             
             # Count words processed
-            for language in self.config.languages:
-                # Roughly estimate validation token usage
-                original_words = sum(
-                    len(str(value).split()) 
-                    for data in json_files.values() 
-                    for value in self._extract_all_values(data)
-                )
-                translated_words = sum(
-                    len(str(value).split()) 
-                    for lang_data in translated_jsons.values() 
-                    if language in lang_data
-                    for value in self._extract_all_values(lang_data[language])
-                )
-                model_usage.add_words(self.config.validation_model, original_words + translated_words)
+            original_words = sum(
+                len(str(value).split()) 
+                for data in json_files.values() 
+                for value in self._extract_all_values(data)
+            )
+            translated_words = sum(
+                len(str(value).split()) 
+                for lang_data in lang_translated.values() 
+                if language in lang_data
+                for value in self._extract_all_values(lang_data[language])
+            )
+            model_usage.add_words(self.config.validation_model, original_words + translated_words)
+            
+            # Add a delay between languages to avoid rate limits
+            if not self.config.mock_mode:
+                logging.info(f"Waiting 5 seconds before processing next language...")
+                time.sleep(5)
         
         # Generate summary report for this file
         logging.info("Generating summary report...")

@@ -33,16 +33,17 @@ def generate_summary_report(
     Returns:
         Path to the generated report file
     """
-    # Create log directory if it doesn't exist
-    os.makedirs(log_dir, exist_ok=True)
+    # Create reports directory if it doesn't exist
+    reports_dir = os.path.join(log_dir, "reports")
+    os.makedirs(reports_dir, exist_ok=True)
     
     # Generate timestamp for report
     timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
     report_filename = f"translation_report_{timestamp}.json"
-    report_path = os.path.join(log_dir, report_filename)
+    report_path = os.path.join(reports_dir, report_filename)
     
     # CSV report for easier viewing
-    csv_report_path = os.path.join(log_dir, f"translation_report_{timestamp}.csv")
+    csv_report_path = os.path.join(reports_dir, f"translation_report_{timestamp}.csv")
     
     # Generate report data
     report_data = {

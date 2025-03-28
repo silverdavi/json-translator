@@ -22,6 +22,7 @@ from openai import OpenAI
 from core.json.json_extractor import process_json_files
 from core.json.json_generator import generate_translated_jsons, load_language_codes
 from utils.validation.validation import run_preflight_checks
+from utils.api.util_call import call_openai
 
 # Configure logging
 logging.basicConfig(
@@ -48,7 +49,7 @@ def parse_args():
 def setup_environment():
     """Set up the environment and load environment variables."""
     # Load environment variables from .env file
-    load_dotenv()
+    load_dotenv(override=True)  # Add override=True to force reload
     
     # Check if API key is available
     api_key = os.environ.get("OPENAI_API_KEY")
@@ -58,11 +59,11 @@ def setup_environment():
     
     # Verify that the API key is not a placeholder or contains invalid characters
     if "mock" in api_key.lower() or api_key == "your_api_key":
-        logger.warning("OPENAI_API_KEY appears to be a placeholder value. Please set a valid API key.")
+        logger.warning("API key appears to be a placeholder value. Please set a valid API key.")
         return False
     
     # Basic format validation
-    if not api_key.startswith("sk-") and not api_key.startswith("sk-proj-"):
+    if not api_key.startswith(("sk-", "sk-proj-")):
         logger.warning(f"OPENAI_API_KEY has incorrect format. OpenAI keys should start with 'sk-' or 'sk-proj-'.")
         return False
     
@@ -145,86 +146,42 @@ def translate_strings(strings: Dict[str, str], language: str, model: str, batch_
     Returns:
         Dictionary mapping paths to translated strings
     """
-    # Initialize OpenAI client
-    api_key = os.environ.get("OPENAI_API_KEY")
-    client = OpenAI(api_key=api_key)
-    
     # Prepare batches
     paths = list(strings.keys())
     values = list(strings.values())
     translations = {}
     
     for i in range(0, len(paths), batch_size):
-        batch_paths = paths[i:i+batch_size]
-        batch_values = values[i:i+batch_size]
+        batch_paths = paths[i:i + batch_size]
+        batch_values = values[i:i + batch_size]
         
-        # Prepare the prompt
-        source_text = "\n".join([f"{j+1}. {text}" for j, text in enumerate(batch_values)])
-        prompt = [
-            {"role": "system", "content": f"You are an expert translator to {language}. Translate the following texts to {language}. Keep the same format and meaning. Return ONLY the translations numbered the same way as the input."},
-            {"role": "user", "content": source_text}
-        ]
+        # Create the translation prompt
+        prompt = {
+            "system": f"You are a professional translator. Translate the following English text to {language}.",
+            "user": json.dumps(batch_values, ensure_ascii=False),
+            "response_format": {"type": "json_object"}
+        }
         
         try:
-            # Call the API
-            logger.debug(f"Translating batch {i//batch_size + 1} of {(len(paths) - 1)//batch_size + 1} to {language}")
-            response = client.chat.completions.create(
+            # Use the proper API wrapper with rate limiting
+            response = call_openai(
+                prompt=prompt,
                 model=model,
-                messages=prompt
+                timeout=30  # Add a reasonable timeout
             )
             
-            # Extract translations
-            result = response.choices[0].message.content.strip()
+            # Parse the response
+            batch_translations = json.loads(response)
             
-            # Parse numbered responses
-            lines = result.split("\n")
-            batch_translations = []
-            
-            current_translation = ""
-            for line in lines:
-                line = line.strip()
-                if not line:
-                    continue
-                
-                # Check if line starts with a number
-                if line[0].isdigit() and "." in line[:5]:
-                    if current_translation:
-                        batch_translations.append(current_translation.strip())
-                    
-                    # Start a new translation
-                    parts = line.split(".", 1)
-                    if len(parts) > 1:
-                        current_translation = parts[1].strip()
-                    else:
-                        current_translation = ""
-                else:
-                    current_translation += " " + line
-            
-            # Add the last translation
-            if current_translation:
-                batch_translations.append(current_translation.strip())
-            
-            # Make sure we have the right number of translations
-            if len(batch_translations) != len(batch_paths):
-                logger.warning(f"Expected {len(batch_paths)} translations, but got {len(batch_translations)}. Adjusting...")
-                # Adjust the translations array
-                if len(batch_translations) < len(batch_paths):
-                    batch_translations.extend(["[Translation error]"] * (len(batch_paths) - len(batch_translations)))
-                else:
-                    batch_translations = batch_translations[:len(batch_paths)]
-            
-            # Store translations
+            # Map translations back to paths
             for path, translation in zip(batch_paths, batch_translations):
                 translations[path] = translation
-            
-            # Wait a bit to avoid rate limits
-            time.sleep(0.5)
-            
+                
         except Exception as e:
             logger.error(f"Error translating batch: {str(e)}")
-            # Add placeholders for failed translations
+            # On error, use original text as fallback
             for path in batch_paths:
-                translations[path] = f"[Error: {str(e)[:50]}...]"
+                translations[path] = strings[path]
     
     return translations
 

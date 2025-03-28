@@ -171,51 +171,50 @@ The translation pipeline generates the following output structure:
 
 ```
 output_dir/
-├── {language_code}/              # Translated JSON files for each language
-│   ├── file1.json
-│   └── file2.json
-├── validated/                    # Validation results
-│   ├── file1_{lang}_validation.json
-│   └── file2_{lang}_validation.json
-├── reports/                      # Visualization reports
-│   └── report_{timestamp}/       # Report for each pipeline run
-│       ├── summary.md            # Comprehensive summary with statistics
-│       ├── score_distribution.png  # Histogram of translation scores
-│       ├── category_radar_{lang}.png  # Radar chart of category scores per language
-│       └── low_score_examples.md  # Examples of translations with low scores
-└── logs/                        # Pipeline execution logs
-    ├── translation_report_{timestamp}.json
-    └── translation_report_{timestamp}.csv
+├── intermediate/                 # All intermediate files
+│   ├── extraction/              # String extraction
+│   │   └── {filename}_extracted.json
+│   ├── options/                 # Translation options
+│   │   └── {filename}_options.json
+│   ├── selection/               # Selected translations
+│   │   └── {filename}_{lang}_selected.csv
+│   ├── refinement/              # Refined translations
+│   │   └── {filename}_{lang}_refined.csv
+│   └── validation/              # Validation results
+│       └── {filename}_{lang}_validation.json
+├── logs/                        # Logs and reports
+│   ├── reports/                 # Translation reports
+│   │   └── translation_report_{timestamp}.json
+│   └── model_usage/            # Model usage statistics
+│       └── usage_{timestamp}.json
+└── translations/                # Final translated files
+    └── {language_code}/         # Organized by language
+        └── {filename}.json
 ```
 
-### Translation Files
-The translated JSON files are located in the `{output_dir}/{language_code}/` directory. Each file maintains the same structure as the source file but with translated content.
+### Directory Descriptions
 
-### Validation Results
-Detailed validation results for each translation are stored in the `validated/` directory. These files contain:
-- Structure validation score
-- Quality validation score
-- Detailed quality metrics
-- Individual translation scores and comments
+- **intermediate/**: Contains all intermediate files generated during the translation process
+  - **extraction/**: Raw extracted strings from source files
+  - **options/**: Multiple translation options for each string
+  - **selection/**: Selected best translations
+  - **refinement/**: Refined translations after selection
+  - **validation/**: Validation results for each translation
 
-### Visualization Reports
-Comprehensive visualization reports are generated in the `reports/` directory. Each pipeline run creates a new report directory with timestamp. Reports include:
+- **logs/**: Contains all logging and reporting information
+  - **reports/**: Detailed translation reports with quality metrics
+  - **model_usage/**: Statistics about model usage and costs
 
-#### summary.md
-A comprehensive markdown report containing:
-- Translation statistics (total strings, files processed)
-- Score distribution breakdown (perfect, excellent, good, fair, poor)
-- Overall statistics (average, median, min, max scores)
-- Category averages (accuracy, fluency, terminology, etc.)
-- File-by-file statistics
-- Example translations from each score group
+- **translations/**: Contains the final translated files
+  - Organized by language code (e.g., es/, fr/, de/)
+  - Each language directory contains the translated JSON files
 
-#### Visualization Images
-- `score_distribution.png`: Histogram showing the distribution of translation scores
-- `category_radar_{lang}.png`: Radar chart showing the average scores across quality categories
-
-### Logs
-Execution logs and CSV reports are stored in the `logs/` directory, providing detailed information about the translation process.
+This structure provides:
+1. Clear separation between intermediate files and final translations
+2. Easy cleanup of intermediate files without affecting final translations
+3. Better organization of files by pipeline stage
+4. Improved logging and reporting capabilities
+5. Clear language-specific organization of final translations
 
 ## Running the Visualization Tool Separately
 
